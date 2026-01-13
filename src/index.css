@@ -10,17 +10,17 @@
 }
 
 body {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-    "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-    sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+  'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+  sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: #f9fafb;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  monospace;
 }
 
 /* Scrollbar styling */
@@ -52,14 +52,10 @@ code {
   scrollbar-width: none;
 }
 
-/* Custom animations */
+/* Animations */
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideUp {
@@ -73,7 +69,7 @@ code {
   }
 }
 
-/* Smooth transitions */
+/* Transitions */
 * {
   transition-property: background-color, border-color, color, fill, stroke;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -111,19 +107,19 @@ input:focus {
   column-gap: 1rem;
 }
 
-/* Image loading optimization */
+/* Image optimization */
 img {
   display: block;
   max-width: 100%;
   height: auto;
 }
 
-/* Prevent layout shift */
+/* Aspect ratio */
 .aspect-square {
   aspect-ratio: 1 / 1;
 }
 
-/* Custom gradient backgrounds */
+/* Gradients */
 .gradient-pink-purple {
   background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
 }
