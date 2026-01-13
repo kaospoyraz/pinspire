@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+- {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  }
+
+body {
+font-family: ‘Inter’, -apple-system, BlinkMacSystemFont, ‘Segoe UI’, ‘Roboto’, ‘Oxygen’,
+‘Ubuntu’, ‘Cantarell’, ‘Fira Sans’, ‘Droid Sans’, ‘Helvetica Neue’,
+sans-serif;
+-webkit-font-smoothing: antialiased;
+-moz-osx-font-smoothing: grayscale;
+background-color: #f9fafb;
+}
+
+code {
+font-family: source-code-pro, Menlo, Monaco, Consolas, ‘Courier New’,
+monospace;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+width: 8px;
+height: 8px;
+}
+
+::-webkit-scrollbar-track {
+background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+background: #c084fc;
+border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+background: #a855f7;
+}
+
+/* Hide scrollbar for horizontal scroll in categories */
+.scrollbar-hide::-webkit-scrollbar {
+display: none;
+}
+
+.scrollbar-hide {
+-ms-overflow-style: none;
+scrollbar-width: none;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+from {
+opacity: 0;
+}
+to {
+opacity: 1;
+}
+}
+
+@keyframes slideUp {
+from {
+transform: translateY(20px);
+opacity: 0;
+}
+to {
+transform: translateY(0);
+opacity: 1;
+}
+}
+
+/* Smooth transitions */
+
+- {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+  }
+
+/* Text selection */
+::selection {
+background-color: #f472b6;
+color: white;
+}
+
+/* Focus styles */
+button:focus,
+input:focus {
+outline: none;
+}
+
+/* Loading animation */
+@keyframes spin {
+to {
+transform: rotate(360deg);
+}
+}
+
+.animate-spin {
+animation: spin 1s linear infinite;
+}
+
+/* Masonry grid optimization */
+.columns-2,
+.columns-3,
+.columns-4,
+.columns-5 {
+column-gap: 1rem;
+}
+
+/* Image loading optimization */
+img {
+display: block;
+max-width: 100%;
+height: auto;
+}
+
+/* Prevent layout shift */
+.aspect-square {
+aspect-ratio: 1 / 1;
+}
+
+/* Custom gradient backgrounds */
+.gradient-pink-purple {
+background: linear-gradient(135deg, #ec4899 0%, #a855f7 100%);
+}
+
+.gradient-blue-purple {
+background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+}
