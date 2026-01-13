@@ -176,8 +176,8 @@ Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için [LICENSE](LICE
 
 ## 👨‍💻 Geliştirici
 
-Geliştirici: **[Adınız]**
-- GitHub: [@kullaniciadi](https://github.com/kullaniciadi)
+Geliştirici: **[Poyraz]**
+- GitHub: [@kaospoyraz](https://github.com/kullaniciadi)
 - Email: email@example.com
 
 ## 🙏 Teşekkürler
