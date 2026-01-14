@@ -38,13 +38,13 @@ const PinspireApp = () => {
   const [users, setUsers] = useState([
     {
       id: 1,
-      name: "Ahmet Yılmaz",
-      email: "ahmet@mail.com",
+      name: "Emre Akıcı",
+      email: "emre@mail.com",
       password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=12",
+      avatar: "https://hizliresim.com/cu1pt70",
       bio: "Tasarım tutkunu 🎨",
-      followers: 1234,
-      following: 567,
+      followers: 1000000,
+      following: 0,
       followingList: [2, 3]
     },
     {
@@ -371,11 +371,9 @@ const PinspireApp = () => {
 
               <div className="text-xs text-center text-gray-500 border-t pt-4">
                 <p className="font-semibold mb-1">
-                  Demo: Tüm şifreler 123456
+                  ROJ: EMRE AKİCİ
                 </p>
-                <p>ahmet@mail.com, zeynep@mail.com</p>
-              </div>
-            </div>
+                
           ) : (
             <div className="space-y-4">
               <input
