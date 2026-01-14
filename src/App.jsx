@@ -1,5 +1,23 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Heart, User, Home, Plus, Bookmark, X, LogOut, Send, MessageCircle, UserPlus, UserCheck, Camera, Image as ImageIcon, Video, Type, Mail } from 'lucide-react';
+import {
+  Search,
+  Heart,
+  User,
+  Home,
+  Plus,
+  Bookmark,
+  X,
+  LogOut,
+  Send,
+  MessageCircle,
+  UserPlus,
+  UserCheck,
+  Camera,
+  Image as ImageIcon,
+  Video,
+  Type,
+  Mail
+} from 'lucide-react';
 
 const PinspireApp = () => {
   const LOGO_URL = 'https://i.hizliresim.com/jtv095w.jpeg';
@@ -37,7 +55,6 @@ const PinspireApp = () => {
   const [likedPins, setLikedPins] = useState([]);
   const [conversations, setConversations] = useState([]);
 
-  // Pinspire Bot
   const PINSPIRE_BOT = {
     id: 0,
     name: 'Pinspire Bot',
@@ -79,9 +96,151 @@ const PinspireApp = () => {
 
   const categories = ['Tümü', 'Tasarım', 'Mimari', 'Sanat', 'Moda', 'Yemek', 'Doğa', 'Teknoloji', 'Duygu'];
 
-  // --- Fonksiyonlar ve Auth / Post / Toggle vs. kodları aynen devam edecek ---
+  // --- Fonksiyonlar ---
+  const handleLogin = () => {
+    const user = users.find(u => u.email === loginForm.email && u.password === loginForm.password);
+    if (user) {
+      setCurrentUser(user);
+      setLoginForm({ email: '', password: '' });
+    } else {
+      alert('Email veya şifre hatalı!');
+    }
+  };
 
-  // filteredPins ve filteredUsers memo
+  const handleRegister = () => {
+    const { firstName, lastName, username, email, city, country, birthDate, password } = registerForm;
+    if (!firstName || !lastName || !username || !email || !city || !country || !birthDate || !password) {
+      alert('Lütfen tüm alanları doldurun!');
+      return;
+    }
+    if (password.length < 6) {
+      alert('Şifre en az 6 karakter olmalı!');
+      return;
+    }
+    if (users.find(u => u.email === email)) {
+      alert('Bu email zaten kayıtlı!');
+      return;
+    }
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setSentCode(code);
+    setVerificationStep(true);
+    alert(`Doğrulama kodu: ${code}\n(Demo: Bu kod email'inize gönderildi)`);
+  };
+
+  const handleVerification = () => {
+    if (verificationCode === sentCode) {
+      const { firstName, lastName, username, email, city, country, birthDate, password } = registerForm;
+      const newUser = {
+        id: users.length + 1,
+        name: `${firstName} ${lastName}`,
+        username,
+        email,
+        password,
+        city,
+        country,
+        birthDate,
+        avatar: `https://i.pravatar.cc/150?img=${users.length + 10}`,
+        bio: 'Yeni kullanıcı 👋',
+        followers: 0,
+        following: 0,
+        followingList: []
+      };
+      setUsers([...users, newUser]);
+      setCurrentUser(newUser);
+      setRegisterForm({ firstName: '', lastName: '', username: '', email: '', city: '', country: '', birthDate: '', password: '' });
+      setVerificationStep(false);
+      setVerificationCode('');
+      alert('Kayıt başarılı! Hoş geldiniz! 🎉');
+    } else {
+      alert('Doğrulama kodu hatalı!');
+    }
+  };
+
+  const handleCreatePost = () => {
+    if (!newPost.title || !newPost.media) {
+      alert('Lütfen başlık ve medya ekleyin!');
+      return;
+    }
+    const post = {
+      id: allPins.length + 1,
+      image: newPost.media,
+      title: newPost.title,
+      description: newPost.description,
+      category: newPost.category,
+      userId: currentUser.id,
+      userName: currentUser.name,
+      saves: 0,
+      likes: 0,
+      commentCount: 0
+    };
+    setAllPins([post, ...allPins]);
+    setShowCreatePost(false);
+    setNewPost({ type: 'photo', title: '', description: '', category: 'Tasarım', media: null });
+    alert('Gönderi başarıyla paylaşıldı! 🎉');
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewPost({ ...newPost, media: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleLogoClick = () => {
+    setActiveTab('home');
+    setShowProfile(false);
+    setShowUserSearch(false);
+    setShowCreatePost(false);
+    setShowMessages(false);
+    setSelectedPin(null);
+    setSearchQuery('');
+    setSelectedCategory('all');
+  };
+
+  const toggleFollow = (userId) => {
+    setUsers(users.map(u => {
+      if (u.id === currentUser.id) {
+        const isFollowing = u.followingList.includes(userId);
+        return { ...u, followingList: isFollowing ? u.followingList.filter(id => id !== userId) : [...u.followingList, userId], following: isFollowing ? u.following - 1 : u.following + 1 };
+      }
+      if (u.id === userId) {
+        const isFollowing = currentUser.followingList?.includes(userId);
+        return { ...u, followers: isFollowing ? u.followers - 1 : u.followers + 1 };
+      }
+      return u;
+    }));
+    setCurrentUser(prev => {
+      const isFollowing = prev.followingList?.includes(userId);
+      return { ...prev, followingList: isFollowing ? prev.followingList.filter(id => id !== userId) : [...prev.followingList, userId], following: isFollowing ? prev.following - 1 : prev.following + 1 };
+    });
+  };
+
+  const toggleSave = (pinId) => setSavedPins(prev => prev.includes(pinId) ? prev.filter(id => id !== pinId) : [...prev, pinId]);
+  const toggleLike = (pinId) => {
+    setLikedPins(prev => prev.includes(pinId) ? prev.filter(id => id !== pinId) : [...prev, pinId]);
+    setAllPins(prev => prev.map(pin => pin.id === pinId ? { ...pin, likes: likedPins.includes(pinId) ? pin.likes - 1 : pin.likes + 1 } : pin));
+  };
+
+  const handleAddComment = (pinId) => {
+    if (!newComment.trim()) return;
+    const comment = { id: Date.now(), userId: currentUser.id, userName: currentUser.name, avatar: currentUser.avatar, text: newComment };
+    setComments({ ...comments, [pinId]: [...(comments[pinId] || []), comment] });
+    setAllPins(prev => prev.map(pin => pin.id === pinId ? { ...pin, commentCount: pin.commentCount + 1 } : pin));
+    setNewComment('');
+  };
+
+  const openUserProfile = (userId) => {
+    setViewingUserId(userId);
+    setShowProfile(true);
+    setShowUserSearch(false);
+  };
+
+  const getSimilarPins = (pin) => allPins.filter(p => p.id !== pin.id && p.category === pin.category).slice(0, 6);
+
   const filteredUsers = useMemo(() => {
     if (!userSearchQuery) return users.filter(u => u.id !== currentUser?.id);
     return users.filter(u => u.id !== currentUser?.id && (u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) || u.bio.toLowerCase().includes(userSearchQuery.toLowerCase())));
@@ -93,11 +252,14 @@ const PinspireApp = () => {
     if (searchQuery) result = result.filter(pin => pin.title.toLowerCase().includes(searchQuery.toLowerCase()));
     if (activeTab === 'saved') result = result.filter(pin => savedPins.includes(pin.id));
     if (showProfile && viewingUserId !== null) result = result.filter(pin => pin.userId === viewingUserId);
-    else if (showProfile && viewingUserId === null) result = result.filter(pin => pin.userId === currentUser?.id);
+    else if (showProfile && !viewingUserId) result = result.filter(pin => pin.userId === currentUser?.id);
     return result;
   }, [selectedCategory, searchQuery, activeTab, savedPins, allPins, showProfile, viewingUserId, currentUser]);
 
-  // --- JSX render kısmı aynen devam eder ---
-};
-
-export default PinspireApp;
+  // --- JSX ---
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
+          <div className="text-center mb-8">
+            <img src={LOGO_URL} alt="Pinspire" className
