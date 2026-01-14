@@ -1,454 +1,439 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
-  Search,
-  Heart,
-  User,
   Home,
-  Bookmark,
-  X,
+  User,
+  Plus,
+  Moon,
+  Sun,
   LogOut,
-  Send,
+  Heart,
   MessageCircle,
   UserPlus,
-  UserCheck,
-  Plus
+  UserCheck
 } from "lucide-react";
 
 const App = () => {
+  // ---------- THEME ----------
+  const [darkMode, setDarkMode] = useState(false);
+
+  // ---------- AUTH ----------
   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
-  const [activeTab, setActiveTab] = useState("home");
-  const [selectedPin, setSelectedPin] = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tümü");
-  const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState({});
-  const [savedPins, setSavedPins] = useState([]);
-  const [likedPins, setLikedPins] = useState([]);
-  const [showAddPin, setShowAddPin] = useState(false);
-  const [messages, setMessages] = useState({});
-  const [chatUser, setChatUser] = useState(null);
+  const [verificationMode, setVerificationMode] = useState(false);
 
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({
-    name: "",
+  // ---------- LOGIN ----------
+  const [loginForm, setLoginForm] = useState({
     email: "",
     password: ""
   });
 
-  const [newPin, setNewPin] = useState({
-    image: "",
-    title: "",
-    description: "",
-    category: "Tasarım"
+  // ---------- REGISTER ----------
+  const [registerForm, setRegisterForm] = useState({
+    username: "",
+    name: "",
+    email: "",
+    password: "",
+    city: "",
+    country: "",
+    birthday: ""
   });
 
-  const [users, setUsers] = useState([
-    {
-      id: 1,
-      name: "Emre Akıcı",
-      email: "emre@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=12",
-      bio: "Tasarım tutkunu 🎨",
-      followers: 5,
-      following: 1,
-      followingList: [2]
-    },
-    {
-      id: 2,
-      name: "Zeynep Kaya",
-      email: "zeynep@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=45",
-      bio: "Moda bloggeri ✨",
-      followers: 2,
-      following: 1,
-      followingList: [1]
-    }
-  ]);
+  // ---------- USERS ----------
+  const [users, setUsers] = useState([]);
 
-  const [allPins, setAllPins] = useState([
-    {
-      id: 1,
-      image:
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-      title: "Modern Minimalist Ofis",
-      description: "Minimal ofis tasarımı",
-      category: "Tasarım",
-      userId: 1,
-      userName: "Emre Akıcı",
-      likes: 10,
-      commentCount: 2
-    },
-    {
-      id: 2,
-      image:
-        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      title: "Sürdürülebilir Mimari",
-      description: "Çevre dostu yapılar",
-      category: "Mimari",
-      userId: 2,
-      userName: "Zeynep Kaya",
-      likes: 20,
-      commentCount: 4
-    }
-  ]);
+  // ---------- VERIFICATION ----------
+  const [sentCode, setSentCode] = useState("");
+  const [enteredCode, setEnteredCode] = useState("");
 
-  const categories = [
-    "Tümü",
-    "Tasarım",
-    "Mimari",
-    "Sanat",
-    "Moda",
-    "Yemek",
-    "Doğa",
-    "Teknoloji"
-  ];
+  // ---------- POSTS ----------
+  const [posts, setPosts] = useState([]);
+  const [newPost, setNewPost] = useState({
+    type: "text",
+    content: ""
+  });
 
-  /* ---------- AUTH ---------- */
+  // ---------- PROFILE ----------
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileEdit, setProfileEdit] = useState({
+    avatar: "",
+    bio: ""
+  });
 
-  const handleLogin = () => {
-    const user = users.find(
-      (u) =>
-        u.email === loginForm.email && u.password === loginForm.password
-    );
-    if (user) {
-      setCurrentUser(user);
-      setLoginForm({ email: "", password: "" });
-    } else {
-      alert("Email veya şifre hatalı!");
-    }
-  };
-
-  const handleRegister = () => {
-    if (!registerForm.name || !registerForm.email || !registerForm.password)
-      return alert("Boş alan bırakmayın");
-
-    if (registerForm.password.length < 6)
-      return alert("Şifre en az 6 karakter olmalı");
-
-    const newUser = {
-      id: users.length + 1,
-      name: registerForm.name,
-      email: registerForm.email,
-      password: registerForm.password,
-      avatar: `https://i.pravatar.cc/150?img=${users.length + 10}`,
-      bio: "Yeni kullanıcı 👋",
-      followers: 0,
-      following: 0,
-      followingList: []
-    };
-
-    setUsers([...users, newUser]);
-    setCurrentUser(newUser);
-  };
-
-  /* ---------- PIN FİLTRE ---------- */
-
-  const filteredPins = useMemo(() => {
-    let p = allPins;
-
-    if (selectedCategory !== "Tümü")
-      p = p.filter((x) => x.category === selectedCategory);
-
-    if (searchQuery)
-      p = p.filter((x) =>
-        x.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-    if (activeTab === "saved")
-      p = p.filter((x) => savedPins.includes(x.id));
-
-    return p;
-  }, [allPins, selectedCategory, searchQuery, activeTab, savedPins]);
-
-  /* ---------- LIKE / SAVE ---------- */
-
-  const toggleLike = (id) => {
-    setLikedPins((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-
-    setAllPins((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, likes: likedPins.includes(id) ? p.likes - 1 : p.likes + 1 }
-          : p
-      )
-    );
-  };
-
-  const toggleSave = (id) => {
-    setSavedPins((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
-  };
-
-  /* ---------- COMMENT ---------- */
-
-  const addComment = (pinId) => {
-    if (!newComment.trim()) return;
-
-    const com = {
-      id: Date.now(),
-      text: newComment,
-      user: currentUser.name,
-      avatar: currentUser.avatar
-    };
-
-    setComments({
-      ...comments,
-      [pinId]: [...(comments[pinId] || []), com]
-    });
-
-    setNewComment("");
-  };
-
-  /* ---------- ADD PIN ---------- */
-
-  const addPin = () => {
-    const p = {
-      ...newPin,
-      id: Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      likes: 0,
-      commentCount: 0
-    };
-
-    setAllPins([p, ...allPins]);
-    setShowAddPin(false);
-    setNewPin({ image: "", title: "", description: "", category: "Tasarım" });
-  };
-
-  /* ---------- FOLLOW ---------- */
-
-  const toggleFollow = (userId) => {
+  // ---------- FOLLOW ----------
+  const toggleFollow = (user) => {
     if (!currentUser) return;
 
-    const is = currentUser.followingList.includes(userId);
+    const isFollowing = currentUser.following?.includes(user.username);
 
     setCurrentUser({
       ...currentUser,
-      followingList: is
-        ? currentUser.followingList.filter((x) => x !== userId)
-        : [...currentUser.followingList, userId]
+      following: isFollowing
+        ? currentUser.following.filter((u) => u !== user.username)
+        : [...(currentUser.following || []), user.username]
     });
   };
 
-  /* ---------- CHAT ---------- */
+  // ---------- SEND CODE ----------
+  const sendVerificationCode = () => {
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setSentCode(code);
+    alert("Doğrulama kodunuz: " + code);
+    setVerificationMode(true);
+  };
 
-  const sendMessage = () => {
-    if (!chatUser || !newComment.trim()) return;
+  // ---------- REGISTER ----------
+  const handleRegister = () => {
+    if (!registerForm.username) return alert("Kullanıcı adı zorunlu");
+    if (!registerForm.email || !registerForm.password)
+      return alert("E-posta ve şifre zorunlu");
 
-    const msg = {
-      id: Date.now(),
-      from: currentUser.id,
-      text: newComment
+    sendVerificationCode();
+  };
+
+  // ---------- VERIFY ----------
+  const verifyCode = () => {
+    if (enteredCode !== sentCode) return alert("Kod hatalı");
+
+    const user = {
+      ...registerForm,
+      avatar: "https://i.pravatar.cc/150",
+      bio: "",
+      followers: [],
+      following: []
     };
 
-    const key = `${currentUser.id}-${chatUser.id}`;
-
-    setMessages({
-      ...messages,
-      [key]: [...(messages[key] || []), msg]
-    });
-
-    setNewComment("");
+    setUsers([...users, user]);
+    setCurrentUser(user);
+    setVerificationMode(false);
+    alert("Doğrulama başarılı 🎉");
   };
 
-  /* ---------- AUTH UI ---------- */
+  // ---------- LOGIN ----------
+  const handleLogin = () => {
+    const found = users.find(
+      (u) =>
+        u.email === loginForm.email && u.password === loginForm.password
+    );
+    if (!found) return alert("Bilgiler yanlış");
 
-  if (!currentUser) {
+    setCurrentUser(found);
+  };
+
+  // ---------- NEW POST ----------
+  const addPost = () => {
+    if (!newPost.content) return;
+
+    setPosts([
+      ...posts,
+      {
+        id: Date.now(),
+        user: currentUser.username,
+        type: newPost.type,
+        content: newPost.content,
+        likes: []
+      }
+    ]);
+
+    setNewPost({ type: "text", content: "" });
+  };
+
+  // ---------- LIKE ----------
+  const toggleLike = (post) => {
+    const liked = post.likes.includes(currentUser.username);
+    post.likes = liked
+      ? post.likes.filter((u) => u !== currentUser.username)
+      : [...post.likes, currentUser.username];
+
+    setPosts([...posts]);
+  };
+
+  // ---------- THEME ----------
+  const theme = darkMode
+    ? "bg-black text-white"
+    : "bg-gray-100 text-gray-900";
+
+  // ---------- REGISTER SCREEN ----------
+  if (!currentUser && !verificationMode && authMode === "register") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-pink-200 via-purple-200 to-blue-200">
-        <div className="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md">
-          <h1 className="text-3xl font-bold text-center mb-6">Pinspire</h1>
+      <div className={`${theme} min-h-screen flex items-center justify-center`}>
+        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
+          <div className="flex justify-center mb-4">
+            <img
+              src="https://i.hizliresim.com/jtv095w.jpeg"
+              className="w-28 h-28 rounded-2xl"
+              alt="logo"
+            />
+          </div>
 
-          {authMode === "login" ? (
-            <div className="space-y-3">
-              <input
-                className="w-full border p-3 rounded-xl"
-                placeholder="Email"
-                value={loginForm.email}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, email: e.target.value })
-                }
-              />
+          <h2 className="text-center font-bold mb-3">Kayıt Ol</h2>
 
-              <input
-                type="password"
-                className="w-full border p-3 rounded-xl"
-                placeholder="Şifre"
-                value={loginForm.password}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, password: e.target.value })
-                }
-              />
+          {[
+            ["Kullanıcı Adı *", "username"],
+            ["Ad Soyad", "name"],
+            ["Email", "email"],
+            ["Şifre", "password"],
+            ["Şehir", "city"],
+            ["Ülke", "country"]
+          ].map(([ph, key]) => (
+            <input
+              key={key}
+              type={key === "password" ? "password" : "text"}
+              className="w-full p-2 mb-2 rounded"
+              placeholder={ph}
+              onChange={(e) =>
+                setRegisterForm({ ...registerForm, [key]: e.target.value })
+              }
+            />
+          ))}
 
-              <button
-                className="w-full bg-purple-500 text-white p-3 rounded-xl"
-                onClick={handleLogin}
-              >
-                Giriş Yap
-              </button>
+          <input
+            type="date"
+            className="w-full p-2 mb-2 rounded"
+            onChange={(e) =>
+              setRegisterForm({
+                ...registerForm,
+                birthday: e.target.value
+              })
+            }
+          />
 
-              <p className="text-center text-sm">
-                Hesabın yok mu?{" "}
-                <button
-                  className="text-purple-600"
-                  onClick={() => setAuthMode("register")}
-                >
-                  Kayıt Ol
-                </button>
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <input
-                className="w-full border p-3 rounded-xl"
-                placeholder="Ad Soyad"
-                value={registerForm.name}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, name: e.target.value })
-                }
-              />
+          <button
+            className="w-full bg-purple-600 text-white p-2 rounded"
+            onClick={handleRegister}
+          >
+            Devam Et
+          </button>
 
-              <input
-                className="w-full border p-3 rounded-xl"
-                placeholder="Email"
-                value={registerForm.email}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, email: e.target.value })
-                }
-              />
-
-              <input
-                type="password"
-                className="w-full border p-3 rounded-xl"
-                placeholder="Şifre"
-                value={registerForm.password}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, password: e.target.value })
-                }
-              />
-
-              <button
-                className="w-full bg-purple-500 text-white p-3 rounded-xl"
-                onClick={handleRegister}
-              >
-                Kayıt Ol
-              </button>
-
-              <p className="text-center text-sm">
-                Hesabın var mı?{" "}
-                <button
-                  className="text-purple-600"
-                  onClick={() => setAuthMode("login")}
-                >
-                  Giriş Yap
-                </button>
-              </p>
-            </div>
-          )}
+          <p className="text-center mt-2">
+            Hesabın var mı?{" "}
+            <button
+              className="text-purple-400"
+              onClick={() => setAuthMode("login")}
+            >
+              Giriş Yap
+            </button>
+          </p>
         </div>
       </div>
     );
   }
 
-  /* ---------- MAIN UI ---------- */
+  // ---------- VERIFICATION ----------
+  if (verificationMode && !currentUser) {
+    return (
+      <div className={`${theme} min-h-screen flex items-center justify-center`}>
+        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
+          <h2 className="text-center font-bold mb-3">
+            E-posta Doğrulama
+          </h2>
 
-  return (
-    <div className="min-h-screen bg-gray-100 pb-20">
-      {/* Header */}
-      <div className="flex justify-between p-4 bg-white shadow">
-        <h2 className="font-bold text-xl">Pinspire</h2>
-        <button onClick={() => setCurrentUser(null)} className="text-red-500">
-          <LogOut />
-        </button>
-      </div>
+          <input
+            className="w-full p-2 mb-2 rounded"
+            placeholder="Gönderilen kod"
+            onChange={(e) => setEnteredCode(e.target.value)}
+          />
 
-      {/* Search */}
-      <div className="p-4">
-        <input
-          className="w-full border p-2 rounded-xl"
-          placeholder="Ara..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-      </div>
-
-      {/* Categories */}
-      <div className="flex gap-2 px-4 overflow-auto">
-        {categories.map((c) => (
           <button
-            key={c}
-            onClick={() => setSelectedCategory(c)}
-            className={`px-3 py-1 rounded-full border ${
-              selectedCategory === c ? "bg-purple-500 text-white" : ""
-            }`}
+            className="w-full bg-green-600 text-white p-2 rounded"
+            onClick={verifyCode}
           >
-            {c}
+            Onayla
           </button>
-        ))}
+        </div>
       </div>
+    );
+  }
 
-      {/* Pins */}
-      <div className="grid grid-cols-2 gap-3 p-4">
-        {filteredPins.map((pin) => (
-          <div key={pin.id} className="bg-white rounded-xl shadow">
+  // ---------- LOGIN ----------
+  if (!currentUser && authMode === "login") {
+    return (
+      <div className={`${theme} min-h-screen flex items-center justify-center`}>
+        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
+          <div className="flex justify-center mb-4">
             <img
-              src={pin.image}
-              className="rounded-t-xl h-40 w-full object-cover"
+              src="https://i.hizliresim.com/jtv095w.jpeg"
+              className="w-28 h-28 rounded-2xl"
+              alt="logo"
             />
-            <div className="p-2">
-              <p className="font-semibold">{pin.title}</p>
-
-              <div className="flex justify-between mt-2">
-                <button onClick={() => toggleLike(pin.id)}>
-                  <Heart
-                    color={likedPins.includes(pin.id) ? "red" : "black"}
-                  />
-                </button>
-
-                <button onClick={() => toggleSave(pin.id)}>
-                  <Bookmark
-                    color={savedPins.includes(pin.id) ? "purple" : "black"}
-                  />
-                </button>
-
-                <button onClick={() => setSelectedPin(pin)}>
-                  <MessageCircle />
-                </button>
-              </div>
-            </div>
           </div>
-        ))}
+
+          <h2 className="text-center font-bold mb-3">Giriş Yap</h2>
+
+          <input
+            className="w-full p-2 mb-2 rounded"
+            placeholder="Email"
+            onChange={(e) =>
+              setLoginForm({ ...loginForm, email: e.target.value })
+            }
+          />
+
+          <input
+            type="password"
+            className="w-full p-2 mb-2 rounded"
+            placeholder="Şifre"
+            onChange={(e) =>
+              setLoginForm({ ...loginForm, password: e.target.value })
+            }
+          />
+
+          <button
+            className="w-full bg-purple-600 text-white p-2 rounded"
+            onClick={handleLogin}
+          >
+            Giriş Yap
+          </button>
+
+          <p className="text-center mt-2">
+            Hesabın yok mu?{" "}
+            <button
+              className="text-purple-400"
+              onClick={() => setAuthMode("register")}
+            >
+              Kayıt Ol
+            </button>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ---------- MAIN APP ----------
+  return (
+    <div className={`${theme} min-h-screen`}>
+      <div className="flex justify-between items-center p-3">
+
+        <img
+          src="https://i.hizliresim.com/jtv095w.jpeg"
+          className="w-10 h-10 rounded-xl"
+          alt="logo"
+        />
+
+        <div className="flex gap-4">
+          <button onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? <Sun /> : <Moon />}
+          </button>
+
+          <button onClick={() => setShowProfile(!showProfile)}>
+            <User />
+          </button>
+
+          <button onClick={() => setCurrentUser(null)}>
+            <LogOut />
+          </button>
+        </div>
       </div>
 
-      {/* Floating Add Pin */}
-      <button
-        onClick={() => setShowAddPin(true)}
-        className="fixed bottom-20 right-4 bg-purple-500 text-white p-4 rounded-full shadow-xl"
-      >
-        <Plus />
-      </button>
+      {!showProfile && (
+        <div className="p-3">
+          {/* NEW POST */}
+          <h3 className="font-bold mb-2">Gönderi Ekle</h3>
 
-      {/* Bottom Nav */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white flex justify-around py-3 shadow-inner">
-        <button onClick={() => setActiveTab("home")}>
-          <Home />
-        </button>
-        <button onClick={() => setActiveTab("saved")}>
-          <Bookmark />
-        </button>
-        <button onClick={() => setShowProfile(true)}>
-          <User />
-        </button>
-      </div>
+          <select
+            className="w-full p-2 rounded mb-2"
+            onChange={(e) =>
+              setNewPost({ ...newPost, type: e.target.value })
+            }
+          >
+            <option value="text">Yazı</option>
+            <option value="image">Fotoğraf</option>
+            <option value="video">Video</option>
+          </select>
+
+          <input
+            className="w-full p-2 rounded mb-2"
+            placeholder="Yazı / Görsel-Video linki"
+            onChange={(e) =>
+              setNewPost({ ...newPost, content: e.target.value })
+            }
+          />
+
+          <button
+            className="bg-green-600 text-white w-full p-2 rounded"
+            onClick={addPost}
+          >
+            Paylaş
+          </button>
+
+          {/* FEED */}
+          <h3 className="font-bold mt-4 mb-2">Akış</h3>
+
+          {posts.map((p) => (
+            <div key={p.id} className="border p-2 rounded mb-3">
+              <p className="text-sm text-purple-500">@{p.user}</p>
+
+              {p.type === "text" && <p>{p.content}</p>}
+              {p.type === "image" && (
+                <img src={p.content} className="rounded mt-2" />
+              )}
+              {p.type === "video" && (
+                <video controls className="rounded mt-2">
+                  <source src={p.content} />
+                </video>
+              )}
+
+              <button
+                className="flex items-center gap-1 mt-2"
+                onClick={() => toggleLike(p)}
+              >
+                <Heart />
+                {p.likes.length}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* PROFILE */}
+      {showProfile && (
+        <div className="p-3">
+          <h3 className="font-bold mb-2">Profil</h3>
+
+          <img
+            src={currentUser.avatar}
+            className="w-24 h-24 rounded-full"
+          />
+
+          <input
+            className="w-full p-2 mt-2 rounded"
+            placeholder="Yeni profil fotoğrafı linki"
+            onChange={(e) =>
+              setProfileEdit({ ...profileEdit, avatar: e.target.value })
+            }
+          />
+
+          <button
+            className="bg-blue-600 text-white w-full p-2 rounded mt-1"
+            onClick={() =>
+              setCurrentUser({
+                ...currentUser,
+                avatar: profileEdit.avatar || currentUser.avatar
+              })
+            }
+          >
+            Fotoğrafı Güncelle
+          </button>
+
+          <textarea
+            className="w-full p-2 mt-3 rounded"
+            placeholder="Biyografi"
+            onChange={(e) =>
+              setProfileEdit({ ...profileEdit, bio: e.target.value })
+            }
+          />
+
+          <button
+            className="bg-purple-600 text-white w-full p-2 rounded mt-1"
+            onClick={() =>
+              setCurrentUser({
+                ...currentUser,
+                bio: profileEdit.bio || currentUser.bio
+              })
+            }
+          >
+            Bio Güncelle
+          </button>
+        </div>
+      )}
     </div>
   );
 };
