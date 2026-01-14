@@ -1,396 +1,479 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+
+const LOGO_URL = "https://i.hizliresim.com/jtv095w.jpeg";
 
 const App = () => {
+  /* ============ GLOBAL ============ */
   const [darkMode, setDarkMode] = useState(false);
-
   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
-  const [verificationMode, setVerificationMode] = useState(false);
+  const [verifyCode, setVerifyCode] = useState("");
+  const [sentCode, setSentCode] = useState(null);
 
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
+  const [activeTab, setActiveTab] = useState("home");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* ============ AUTH FORMS ============ */
+
+  const [loginForm, setLoginForm] = useState({
+    email: "",
+    password: ""
+  });
 
   const [registerForm, setRegisterForm] = useState({
     username: "",
     name: "",
     email: "",
     password: "",
-    city: "",
     country: "",
-    birthday: "",
+    city: "",
+    birthday: ""
   });
 
-  const [sentCode, setSentCode] = useState("");
-  const [enteredCode, setEnteredCode] = useState("");
+  /* ============ USERS & PINS ============ */
 
   const [users, setUsers] = useState([]);
+  const [allPins, setAllPins] = useState([]);
 
-  const [posts, setPosts] = useState([]);
-  const [newPostFile, setNewPostFile] = useState(null);
-  const [newPostType, setNewPostType] = useState("image");
+  const [savedPins, setSavedPins] = useState([]);
+  const [likedPins, setLikedPins] = useState([]);
 
-  const [showProfile, setShowProfile] = useState(false);
-  const [profileEdit, setProfileEdit] = useState({
-    avatarFile: null,
-    bio: "",
-  });
+  /* ADD PIN */
+  const [showAddPin, setShowAddPin] = useState(false);
+  const [newPinFile, setNewPinFile] = useState(null);
+  const [newPinType, setNewPinType] = useState("image");
+  const [newPinTitle, setNewPinTitle] = useState("");
 
-  const logoUrl = "https://i.hizliresim.com/jtv095w.jpeg";
-
-  // ANA SAYFAYI YENİLE
-  const refreshHome = () => {
-    setShowProfile(false);
-    setPosts([...posts]); // basit yenile
+  /* SEND CODE */
+  const sendCode = () => {
+    const c = Math.floor(100000 + Math.random() * 900000).toString();
+    setSentCode(c);
+    alert("E-posta doğrulama kodun: " + c);
+    setAuthMode("verify");
   };
 
-  // DOĞRULAMA KODU GÖNDER
-  const sendVerificationCode = () => {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentCode(code);
-    alert("Doğrulama kodunuz: " + code);
-    setVerificationMode(true);
-  };
-
-  // KAYIT
+  /* REGISTER */
   const handleRegister = () => {
-    if (!registerForm.username) return alert("Kullanıcı adı zorunlu");
-    if (!registerForm.email || !registerForm.password)
-      return alert("Email ve şifre zorunlu");
+    if (
+      !registerForm.username ||
+      !registerForm.name ||
+      !registerForm.email ||
+      !registerForm.password ||
+      !registerForm.city ||
+      !registerForm.country ||
+      !registerForm.birthday
+    ) {
+      alert("Lütfen tüm alanları doldurun");
+      return;
+    }
 
-    sendVerificationCode();
+    if (registerForm.password.length < 6) {
+      alert("Şifre en az 6 karakter olmalı");
+      return;
+    }
+
+    if (users.find((u) => u.email === registerForm.email)) {
+      alert("Bu e-posta zaten kayıtlı");
+      return;
+    }
+
+    sendCode();
   };
 
-  // DOĞRULAMA
-  const verifyCode = () => {
-    if (enteredCode !== sentCode) return alert("Kod hatalı");
+  const confirmCode = () => {
+    if (verifyCode !== sentCode) {
+      alert("Kod hatalı");
+      return;
+    }
 
     const newUser = {
+      id: Date.now(),
       ...registerForm,
-      avatar: null, // otomatik yok
+      avatar: null,      // OTOMATİK FOTO YOK
       bio: "",
+      posts: []
     };
 
     setUsers([...users, newUser]);
     setCurrentUser(newUser);
-    setVerificationMode(false);
-    alert("Kayıt tamamlandı");
+    alert("Kayıt tamamlandı!");
   };
 
-  // GİRİŞ
+  /* LOGIN */
   const handleLogin = () => {
-    const found = users.find(
-      (u) =>
-        u.email === loginForm.email && u.password === loginForm.password
+    const u = users.find(
+      (x) =>
+        x.email === loginForm.email && x.password === loginForm.password
     );
-    if (!found) return alert("Bilgiler hatalı");
-    setCurrentUser(found);
+    if (!u) {
+      alert("Email veya şifre hatalı");
+      return;
+    }
+    setCurrentUser(u);
   };
 
-  // GÖNDERİ EKLE (GALERİDEN)
-  const addPost = () => {
-    if (!newPostFile) return alert("Dosya seçmedin");
-
-    const url = URL.createObjectURL(newPostFile);
-
-    setPosts([
-      ...posts,
-      {
-        id: Date.now(),
-        user: currentUser.username,
-        type: newPostType,
-        url,
-      },
-    ]);
-
-    setNewPostFile(null);
+  /* LIKE / SAVE */
+  const toggleLike = (id) => {
+    setLikedPins((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
   };
 
-  // PROFİL FOTOĞRAFI KAYDET
-  const saveAvatar = () => {
-    if (!profileEdit.avatarFile) return;
-
-    const url = URL.createObjectURL(profileEdit.avatarFile);
-
-    setCurrentUser({
-      ...currentUser,
-      avatar: url,
-    });
+  const toggleSave = (id) => {
+    setSavedPins((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
   };
 
-  const theme = darkMode
-    ? "bg-black text-white"
-    : "bg-gray-100 text-gray-900";
+  /* ADD PIN – FIXED FILE HANDLING */
+  const addPin = () => {
+    if (!newPinFile) {
+      alert("Seçili dosya yok");
+      return;
+    }
 
-  /* ================= AUTH: REGISTER ================= */
+    if (!newPinTitle.trim()) {
+      alert("Başlık gir");
+      return;
+    }
 
-  if (!currentUser && !verificationMode && authMode === "register") {
+    const objectUrl = URL.createObjectURL(newPinFile);
+
+    const pin = {
+      id: Date.now(),
+      url: objectUrl,
+      type: newPinType,
+      title: newPinTitle,
+      userId: currentUser.id,
+      userName: currentUser.username
+    };
+
+    setAllPins([pin, ...allPins]);
+
+    // temizle
+    setShowAddPin(false);
+    setNewPinFile(null);
+    setNewPinTitle("");
+  };
+
+  /* FILTER */
+  const filteredPins = useMemo(() => {
+    let p = allPins;
+    if (searchQuery)
+      p = p.filter((x) =>
+        x.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    return p;
+  }, [allPins, searchQuery]);
+
+  /* ============ AUTH SCREENS ============ */
+  if (!currentUser) {
     return (
-      <div className={`${theme} min-h-screen flex items-center justify-center`}>
-        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
+      <div
+        className={
+          darkMode
+            ? "min-h-screen bg-gray-900 text-white flex items-center justify-center"
+            : "min-h-screen bg-gray-100 text-black flex items-center justify-center"
+        }
+      >
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl w-full max-w-md shadow">
 
-          <div className="flex justify-center mb-4">
-            <img
-              src={logoUrl}
-              alt="logo"
-              className="w-28 h-28 rounded-2xl cursor-pointer"
-              onClick={refreshHome}
-            />
+          {/* LOGO */}
+          <div
+            className="flex justify-center mb-4 cursor-pointer"
+            onClick={() => window.location.reload()}
+          >
+            <img src={LOGO_URL} className="w-28 h-28 rounded-2xl object-cover" />
           </div>
 
-          <h2 className="text-center font-bold mb-3">Kayıt Ol</h2>
+          {/* LOGIN */}
+          {authMode === "login" && (
+            <div className="space-y-3">
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="E-posta"
+                value={loginForm.email}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, email: e.target.value })
+                }
+              />
 
-          {[
-            ["Kullanıcı Adı *", "username"],
-            ["Ad Soyad", "name"],
-            ["Email", "email"],
-            ["Şifre", "password"],
-            ["Şehir", "city"],
-            ["Ülke", "country"],
-          ].map(([ph, key]) => (
-            <input
-              key={key}
-              type={key === "password" ? "password" : "text"}
-              className="w-full p-2 mb-2 rounded"
-              placeholder={ph}
-              onChange={(e) =>
-                setRegisterForm({ ...registerForm, [key]: e.target.value })
-              }
-            />
-          ))}
+              <input
+                type="password"
+                className="w-full border p-2 rounded"
+                placeholder="Şifre"
+                value={loginForm.password}
+                onChange={(e) =>
+                  setLoginForm({ ...loginForm, password: e.target.value })
+                }
+              />
 
-          <input
-            type="date"
-            className="w-full p-2 mb-3 rounded"
-            onChange={(e) =>
-              setRegisterForm({ ...registerForm, birthday: e.target.value })
-            }
-          />
+              <button
+                className="w-full bg-purple-600 text-white p-2 rounded"
+                onClick={handleLogin}
+              >
+                Giriş yap
+              </button>
 
-          <button
-            className="w-full bg-purple-600 text-white p-2 rounded"
-            onClick={handleRegister}
-          >
-            Devam Et
-          </button>
-
-          <p
-            className="text-sm mt-2 text-center cursor-pointer"
-            onClick={() => setAuthMode("login")}
-          >
-            Hesabın var mı? Giriş yap
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  /* ================= AUTH: EMAIL VERIFY ================= */
-
-  if (verificationMode && !currentUser) {
-    return (
-      <div className={`${theme} min-h-screen flex items-center justify-center`}>
-        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
-          <h2 className="text-center font-bold mb-3">E-posta Doğrulama</h2>
-
-          <input
-            className="w-full p-2 mb-2 rounded"
-            placeholder="Gönderilen kodu gir"
-            onChange={(e) => setEnteredCode(e.target.value)}
-          />
-
-          <button
-            className="w-full bg-green-600 text-white p-2 rounded"
-            onClick={verifyCode}
-          >
-            Onayla
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ================= AUTH: LOGIN ================= */
-
-  if (!currentUser && authMode === "login") {
-    return (
-      <div className={`${theme} min-h-screen flex items-center justify-center`}>
-        <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
-          <div className="flex justify-center mb-4">
-            <img
-              src={logoUrl}
-              alt="logo"
-              className="w-28 h-28 rounded-2xl cursor-pointer"
-              onClick={refreshHome}
-            />
-          </div>
-
-          <h2 className="text-center font-bold mb-3">Giriş Yap</h2>
-
-          <input
-            className="w-full p-2 mb-2 rounded"
-            placeholder="Email"
-            onChange={(e) =>
-              setLoginForm({ ...loginForm, email: e.target.value })
-            }
-          />
-
-          <input
-            type="password"
-            className="w-full p-2 mb-2 rounded"
-            placeholder="Şifre"
-            onChange={(e) =>
-              setLoginForm({ ...loginForm, password: e.target.value })
-            }
-          />
-
-          <button
-            className="w-full bg-purple-600 text-white p-2 rounded"
-            onClick={handleLogin}
-          >
-            Giriş Yap
-          </button>
-
-          <p
-            className="text-sm mt-2 text-center cursor-pointer"
-            onClick={() => setAuthMode("register")}
-          >
-            Hesabın yok mu? Kayıt ol
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  /* ================= MAIN APP ================= */
-
-  return (
-    <div className={`${theme} min-h-screen`}>
-
-      {/* ÜST BAR */}
-      <div className="flex justify-between items-center p-3">
-
-        <img
-          src={logoUrl}
-          alt="logo"
-          className="w-10 h-10 rounded-xl cursor-pointer"
-          onClick={refreshHome}
-        />
-
-        <div className="flex gap-3">
-          <button onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? "Açık Mod" : "Koyu Mod"}
-          </button>
-
-          <button onClick={() => setShowProfile(!showProfile)}>
-            Profil
-          </button>
-
-          <button onClick={() => setCurrentUser(null)}>Çıkış</button>
-        </div>
-      </div>
-
-      {/* ANA SAYFA / FEED */}
-      {!showProfile && (
-        <div className="p-3">
-
-          <h3 className="font-bold mb-2">Gönderi Ekle</h3>
-
-          <select
-            className="w-full p-2 rounded mb-2"
-            onChange={(e) => setNewPostType(e.target.value)}
-          >
-            <option value="image">Fotoğraf</option>
-            <option value="video">Video</option>
-          </select>
-
-          <input
-            type="file"
-            accept={newPostType === "image" ? "image/*" : "video/*"}
-            className="w-full p-2 rounded mb-2"
-            onChange={(e) => setNewPostFile(e.target.files[0])}
-          />
-
-          <button
-            className="bg-green-600 text-white w-full p-2 rounded"
-            onClick={addPost}
-          >
-            Paylaş
-          </button>
-
-          <h3 className="font-bold mt-4">Akış</h3>
-
-          {posts.map((p) => (
-            <div key={p.id} className="border p-2 rounded mt-2">
-              <p className="text-sm">@{p.user}</p>
-
-              {p.type === "image" && <img src={p.url} className="rounded" />}
-
-              {p.type === "video" && (
-                <video controls className="rounded">
-                  <source src={p.url} />
-                </video>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* PROFİL SAYFASI */}
-      {showProfile && (
-        <div className="p-3">
-
-          <h3 className="font-bold mb-2">Profilim</h3>
-
-          {currentUser.avatar ? (
-            <img
-              src={currentUser.avatar}
-              className="w-24 h-24 rounded-full"
-            />
-          ) : (
-            <div className="w-24 h-24 rounded-full bg-gray-400 flex items-center justify-center">
-              Fotoğraf Yok
+              <p className="text-center text-sm">
+                Hesabın yok mu?{" "}
+                <button
+                  className="text-purple-600"
+                  onClick={() => setAuthMode("register")}
+                >
+                  Kayıt ol
+                </button>
+              </p>
             </div>
           )}
 
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full p-2 mt-2 rounded"
-            onChange={(e) =>
-              setProfileEdit({
-                ...profileEdit,
-                avatarFile: e.target.files[0],
-              })
-            }
-          />
+          {/* REGISTER */}
+          {authMode === "register" && (
+            <div className="space-y-3">
 
-          <button
-            className="bg-blue-600 text-white w-full p-2 rounded mt-1"
-            onClick={saveAvatar}
-          >
-            Profil Fotoğrafı Güncelle
-          </button>
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="Kullanıcı adı"
+                value={registerForm.username}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    username: e.target.value
+                  })
+                }
+              />
 
-          <textarea
-            className="w-full p-2 mt-3 rounded"
-            placeholder="Bio"
-            onChange={(e) =>
-              setProfileEdit({ ...profileEdit, bio: e.target.value })
-            }
-          />
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="Ad Soyad"
+                value={registerForm.name}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, name: e.target.value })
+                }
+              />
 
-          <button
-            className="bg-purple-600 text-white w-full p-2 rounded mt-1"
-            onClick={() =>
-              setCurrentUser({
-                ...currentUser,
-                bio: profileEdit.bio || currentUser.bio,
-              })
-            }
-          >
-            Bio Kaydet
-          </button>
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="E-posta"
+                value={registerForm.email}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, email: e.target.value })
+                }
+              />
+
+              <input
+                type="password"
+                className="w-full border p-2 rounded"
+                placeholder="Şifre"
+                value={registerForm.password}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    password: e.target.value
+                  })
+                }
+              />
+
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="Ülke"
+                value={registerForm.country}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    country: e.target.value
+                  })
+                }
+              />
+
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="Şehir"
+                value={registerForm.city}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    city: e.target.value
+                  })
+                }
+              />
+
+              <input
+                type="date"
+                className="w-full border p-2 rounded"
+                value={registerForm.birthday}
+                onChange={(e) =>
+                  setRegisterForm({
+                    ...registerForm,
+                    birthday: e.target.value
+                  })
+                }
+              />
+
+              <button
+                className="w-full bg-purple-600 text-white p-2 rounded"
+                onClick={handleRegister}
+              >
+                Devam et (Kod al)
+              </button>
+
+              <p className="text-center text-sm">
+                Hesabın var mı?{" "}
+                <button
+                  className="text-purple-600"
+                  onClick={() => setAuthMode("login")}
+                >
+                  Giriş yap
+                </button>
+              </p>
+            </div>
+          )}
+
+          {/* VERIFY CODE */}
+          {authMode === "verify" && (
+            <div className="space-y-3">
+              <p className="text-center">E-postana gelen kodu gir</p>
+
+              <input
+                className="w-full border p-2 rounded"
+                placeholder="Doğrulama kodu"
+                value={verifyCode}
+                onChange={(e) => setVerifyCode(e.target.value)}
+              />
+
+              <button
+                className="w-full bg-green-600 text-white p-2 rounded"
+                onClick={confirmCode}
+              >
+                Onayla
+              </button>
+            </div>
+          )}
+
+          <div className="text-center mt-3">
+            <button onClick={() => setDarkMode(!darkMode)}>
+              {darkMode ? "Açık mod" : "Koyu mod"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ============ MAIN APP UI ============ */
+
+  return (
+    <div className={darkMode ? "bg-gray-900 text-white min-h-screen" : "bg-gray-100 min-h-screen"}>
+
+      {/* HEADER LOGO */}
+      <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow">
+        <img
+          src={LOGO_URL}
+          className="w-12 h-12 rounded-xl cursor-pointer"
+          onClick={() => {
+            setActiveTab("home");
+            window.location.reload();
+          }}
+        />
+        <button onClick={() => setCurrentUser(null)} className="text-red-500">
+          Çıkış
+        </button>
+      </div>
+
+      {/* SEARCH */}
+      <div className="p-4">
+        <input
+          className="w-full border p-2 rounded"
+          placeholder="Ara..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      {/* PIN LIST */}
+      <div className="grid grid-cols-2 gap-3 p-4">
+        {filteredPins.map((p) => (
+          <div key={p.id} className="bg-white dark:bg-gray-800 rounded-xl shadow">
+
+            {p.type === "image" ? (
+              <img src={p.url} className="rounded-t-xl h-40 w-full object-cover" />
+            ) : (
+              <video src={p.url} controls className="rounded-t-xl h-40 w-full object-cover" />
+            )}
+
+            <div className="p-2">
+              <p className="font-semibold">{p.title}</p>
+
+              <div className="flex justify-between mt-2">
+                <button onClick={() => toggleLike(p.id)}>♥</button>
+                <button onClick={() => toggleSave(p.id)}>★</button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ADD PIN BUTTON */}
+      <button
+        onClick={() => setShowAddPin(true)}
+        className="fixed bottom-20 right-4 bg-purple-600 text-white p-4 rounded-full"
+      >
+        +
+      </button>
+
+      {/* ADD PIN MODAL */}
+      {showAddPin && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl w-80">
+            <h3>Paylaşım ekle</h3>
+
+            <select
+              className="w-full border p-2 rounded mt-2"
+              value={newPinType}
+              onChange={(e) => {
+                setNewPinType(e.target.value);
+                setNewPinFile(null);
+              }}
+            >
+              <option value="image">Fotoğraf</option>
+              <option value="video">Video</option>
+            </select>
+
+            <input
+              key={newPinType}
+              type="file"
+              accept={newPinType === "image" ? "image/*" : "video/*"}
+              className="w-full mt-2"
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  setNewPinFile(e.target.files[0]);
+                } else {
+                  setNewPinFile(null);
+                }
+              }}
+            />
+
+            <input
+              className="w-full border p-2 rounded mt-2"
+              placeholder="Başlık"
+              value={newPinTitle}
+              onChange={(e) => setNewPinTitle(e.target.value)}
+            />
+
+            <button
+              onClick={addPin}
+              className="w-full bg-purple-600 text-white p-2 rounded mt-2"
+            >
+              Paylaş
+            </button>
+
+            <button onClick={() => setShowAddPin(false)} className="w-full mt-2">
+              Kapat
+            </button>
+          </div>
         </div>
       )}
+
     </div>
   );
 };
