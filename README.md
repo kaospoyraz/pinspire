@@ -2,7 +2,7 @@
 
 Modern ve kullanıcı dostu bir görsel paylaşım platformu. React ile geliştirilmiş, tam fonksiyonel sosyal medya deneyimi.
 
-![Pinspire Screenshot](https://via.placeholder.com/1200x600/FF1493/FFFFFF?text=Pinspire+Social+Media+App)
+![Pinspire Screenshot] (https://hizliresim.com/fy6hzff)
 
 ## ✨ Özellikler
 
