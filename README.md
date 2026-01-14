@@ -2,7 +2,7 @@
 
 Modern ve kullanıcı dostu bir görsel paylaşım platformu. React ile geliştirilmiş, tam fonksiyonel sosyal medya deneyimi.
 
-![Pinspire Screenshot] (https://hizliresim.com/fy6hzff)
+
 
 ## ✨ Özellikler
 
