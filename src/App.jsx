@@ -1,442 +1,358 @@
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import {
-  Search,
-  Heart,
-  User,
   Home,
   Bookmark,
-  X,
-  LogOut,
+  User,
+  Heart,
+  Plus,
   Send,
   MessageCircle,
-  UserPlus,
-  UserCheck
+  LogOut,
 } from "lucide-react";
 
-const PinspireApp = () => {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [authMode, setAuthMode] = useState("login");
+export default function App() {
+  // Kullanıcı
+  const [currentUser, setCurrentUser] = useState({ username: "emre" });
+
+  // Sekmeler
   const [activeTab, setActiveTab] = useState("home");
-  const [selectedPin, setSelectedPin] = useState(null);
-  const [showProfile, setShowProfile] = useState(false);
-  const [viewingUserId, setViewingUserId] = useState(null);
-  const [showUserSearch, setShowUserSearch] = useState(false);
-  const [userSearchQuery, setUserSearchQuery] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
-  const [registerForm, setRegisterForm] = useState({
-    name: "",
-    email: "",
-    password: ""
-  });
-  const [newComment, setNewComment] = useState("");
-  const [comments, setComments] = useState({});
-  const [savedPins, setSavedPins] = useState([]);
-  const [likedPins, setLikedPins] = useState([]);
 
-  const [users, setUsers] = useState([
+  // Pin verisi
+  const [pins, setPins] = useState([
     {
       id: 1,
-      name: "Emre Akıcı",
-      email: "emre@mail.com",
-      password: "123456",
-      avatar: "https://hizliresim.com/cu1pt70",
-      bio: "Tasarım tutkunu 🎨",
-      followers: 1000000,
-      following: 0,
-      followingList: [2, 3]
+      title: "Doğa Manzarası",
+      category: "Doğa",
+      image:
+        "https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg",
+      likes: 5,
+      comments: [],
     },
     {
       id: 2,
-      name: "Zeynep Kaya",
-      email: "zeynep@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=45",
-      bio: "Moda bloggeri ✨",
-      followers: 2340,
-      following: 890,
-      followingList: [1, 4]
-    },
-    {
-      id: 3,
-      name: "Mehmet Demir",
-      email: "mehmet@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=33",
-      bio: "Mimar | Minimalist 🏛️",
-      followers: 3456,
-      following: 234,
-      followingList: [1, 2]
-    },
-    {
-      id: 4,
-      name: "Ayşe Şahin",
-      email: "ayse@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=27",
-      bio: "Yemek sanatçısı 👩‍🍳",
-      followers: 5678,
-      following: 456,
-      followingList: [2]
-    },
-    {
-      id: 5,
-      name: "Can Öztürk",
-      email: "can@mail.com",
-      password: "123456",
-      avatar: "https://i.pravatar.cc/150?img=15",
-      bio: "Doğa fotoğrafçısı 📸",
-      followers: 4321,
-      following: 678,
-      followingList: [3]
-    }
-  ]);
-
-  const [allPins, setAllPins] = useState([
-    {
-      id: 1,
-      image:
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400",
-      title: "Modern Minimalist Ofis",
-      description: "Minimal ofis tasarımı",
+      title: "Minimal Tasarım",
       category: "Tasarım",
-      userId: 1,
-      userName: "Ahmet Yılmaz",
-      saves: 234,
-      likes: 145,
-      commentCount: 12
-    },
-    {
-      id: 2,
       image:
-        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400",
-      title: "Sürdürülebilir Mimari",
-      description: "Çevre dostu yapılar",
-      category: "Mimari",
-      userId: 3,
-      userName: "Mehmet Demir",
-      saves: 456,
-      likes: 289,
-      commentCount: 34
-    }
+        "https://images.pexels.com/photos/37347/office-820390_1280.jpg",
+      likes: 2,
+      comments: [],
+    },
   ]);
 
-  const categories = [
-    "Tümü",
-    "Tasarım",
-    "Mimari",
-    "Sanat",
-    "Moda",
-    "Yemek",
-    "Doğa",
-    "Teknoloji"
-  ];
+  const [likedPins, setLikedPins] = useState([]);
+  const [savedPins, setSavedPins] = useState([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("Tümü");
 
-  const handleLogin = () => {
-    const user = users.find(
-      (u) =>
-        u.email === loginForm.email && u.password === loginForm.password
-    );
-    if (user) {
-      setCurrentUser(user);
-      setLoginForm({ email: "", password: "" });
-    } else {
-      alert("Email veya şifre hatalı!");
-    }
-  };
+  // Yeni pin ekleme
+  const [newPin, setNewPin] = useState({
+    title: "",
+    image: "",
+    category: "",
+  });
 
-  const handleRegister = () => {
-    if (!registerForm.name || !registerForm.email || !registerForm.password) {
-      alert("Lütfen tüm alanları doldurun!");
-      return;
-    }
-    if (registerForm.password.length < 6) {
-      alert("Şifre en az 6 karakter olmalı!");
-      return;
-    }
-    if (users.find((u) => u.email === registerForm.email)) {
-      alert("Bu email zaten kayıtlı!");
-      return;
-    }
+  // Mesajlar
+  const [messages, setMessages] = useState([]);
+  const [newMessage, setNewMessage] = useState("");
 
-    const newUser = {
-      id: users.length + 1,
-      name: registerForm.name,
-      email: registerForm.email,
-      password: registerForm.password,
-      avatar: `https://i.pravatar.cc/150?img=${users.length + 10}`,
-      bio: "Yeni kullanıcı 👋",
-      followers: 0,
-      following: 0,
-      followingList: []
-    };
+  // Yorum
+  const [selectedPinForComments, setSelectedPinForComments] = useState(null);
+  const [commentText, setCommentText] = useState("");
 
-    setUsers([...users, newUser]);
-    setCurrentUser(newUser);
-    setRegisterForm({ name: "", email: "", password: "" });
-    alert("Kayıt başarılı! 🎉");
-  };
+  // --- Fonksiyonlar ---
 
-  const toggleFollow = (userId) => {
-    setUsers(
-      users.map((u) => {
-        if (u.id === currentUser.id) {
-          const isFollowing = u.followingList.includes(userId);
-          return {
-            ...u,
-            followingList: isFollowing
-              ? u.followingList.filter((id) => id !== userId)
-              : [...u.followingList, userId],
-            following: isFollowing ? u.following - 1 : u.following + 1
-          };
-        }
-        if (u.id === userId) {
-          const isFollowing = currentUser.followingList.includes(userId);
-          return {
-            ...u,
-            followers: isFollowing ? u.followers - 1 : u.followers + 1
-          };
-        }
-        return u;
-      })
-    );
-
-    setCurrentUser((prev) => {
-      const isFollowing = prev.followingList.includes(userId);
-      return {
-        ...prev,
-        followingList: isFollowing
-          ? prev.followingList.filter((id) => id !== userId)
-          : [...prev.followingList, userId],
-        following: isFollowing ? prev.following - 1 : prev.following + 1
-      };
-    });
-  };
-
-  const toggleSave = (pinId) =>
-    setSavedPins((prev) =>
-      prev.includes(pinId) ? prev.filter((id) => id !== pinId) : [...prev, pinId]
-    );
-
-  const toggleLike = (pinId) => {
+  const toggleLike = (id) => {
     setLikedPins((prev) =>
-      prev.includes(pinId) ? prev.filter((id) => id !== pinId) : [...prev, pinId]
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
 
-    setAllPins((prev) =>
-      prev.map((pin) =>
-        pin.id === pinId
+    setPins((prev) =>
+      prev.map((p) =>
+        p.id === id
           ? {
-              ...pin,
-              likes: likedPins.includes(pinId)
-                ? pin.likes - 1
-                : pin.likes + 1
+              ...p,
+              likes: likedPins.includes(id) ? p.likes - 1 : p.likes + 1,
             }
-          : pin
+          : p
       )
     );
   };
 
-  const handleAddComment = (pinId) => {
-    if (!newComment.trim()) return;
+  const toggleSave = (id) => {
+    setSavedPins((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
 
-    const comment = {
-      id: Date.now(),
-      userId: currentUser.id,
-      userName: currentUser.name,
-      avatar: currentUser.avatar,
-      text: newComment
-    };
+  const addPin = () => {
+    if (!newPin.title || !newPin.image) return;
 
-    setComments({
-      ...comments,
-      [pinId]: [...(comments[pinId] || []), comment]
-    });
+    setPins([
+      ...pins,
+      {
+        id: Date.now(),
+        ...newPin,
+        likes: 0,
+        comments: [],
+      },
+    ]);
 
-    setAllPins((prev) =>
-      prev.map((pin) =>
-        pin.id === pinId
-          ? { ...pin, commentCount: pin.commentCount + 1 }
-          : pin
+    setNewPin({ title: "", image: "", category: "" });
+    setActiveTab("home");
+  };
+
+  const sendMessage = () => {
+    if (!newMessage) return;
+    setMessages([...messages, { text: newMessage, sender: currentUser.username }]);
+    setNewMessage("");
+  };
+
+  const addComment = () => {
+    if (!commentText || !selectedPinForComments) return;
+
+    setPins((prev) =>
+      prev.map((p) =>
+        p.id === selectedPinForComments.id
+          ? {
+              ...p,
+              comments: [...p.comments, { user: currentUser.username, text: commentText }],
+            }
+          : p
       )
     );
 
-    setNewComment("");
+    setCommentText("");
   };
 
-  const openUserProfile = (userId) => {
-    setViewingUserId(userId);
-    setShowProfile(true);
-    setShowUserSearch(false);
-  };
+  // Filtreleme
+  const filteredPins = pins.filter((p) => {
+    const categoryMatch =
+      selectedCategory === "Tümü" || p.category === selectedCategory;
 
-  const filteredUsers = useMemo(() => {
-    if (!userSearchQuery)
-      return users.filter((u) => u.id !== currentUser?.id);
+    const searchMatch = p.title
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
 
-    return users.filter(
-      (u) =>
-        u.id !== currentUser?.id &&
-        (u.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-          u.bio.toLowerCase().includes(userSearchQuery.toLowerCase()))
-    );
-  }, [userSearchQuery, users, currentUser]);
+    return categoryMatch && searchMatch;
+  });
 
-  const filteredPins = useMemo(() => {
-    let result = allPins;
+  // ----------- ARAYÜZLER -----------
 
-    if (selectedCategory !== "all")
-      result = result.filter(
-        (pin) =>
-          pin.category.toLowerCase() === selectedCategory.toLowerCase()
-      );
-
-    if (searchQuery)
-      result = result.filter((pin) =>
-        pin.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-
-    if (activeTab === "saved")
-      result = result.filter((pin) => savedPins.includes(pin.id));
-
-    if (showProfile && viewingUserId)
-      result = result.filter((pin) => pin.userId === viewingUserId);
-    else if (showProfile && !viewingUserId)
-      result = result.filter((pin) => pin.userId === currentUser?.id);
-
-    return result;
-  }, [
-    selectedCategory,
-    searchQuery,
-    activeTab,
-    savedPins,
-    allPins,
-    showProfile,
-    viewingUserId,
-    currentUser
-  ]);
-
-  /* ---------------- AUTH SCREENS ---------------- */
-
-  if (!currentUser) {
+  // --- Yorum Sayfası ---
+  if (selectedPinForComments) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 mb-2">
-              Pinspire
-            </h1>
-            <p className="text-gray-600">İlham veren fikirleri keşfedin</p>
-          </div>
+      <div className="p-4 space-y-3">
+        <button
+          onClick={() => setSelectedPinForComments(null)}
+          className="text-blue-500"
+        >
+          ← Geri
+        </button>
 
-          {authMode === "login" ? (
-            <div className="space-y-4">
-              <input
-                type="email"
-                value={loginForm.email}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, email: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none"
-                placeholder="Email"
-              />
+        <img
+          src={selectedPinForComments.image}
+          className="w-full rounded-xl"
+        />
 
-              <input
-                type="password"
-                value={loginForm.password}
-                onChange={(e) =>
-                  setLoginForm({ ...loginForm, password: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none"
-                placeholder="Şifre"
-              />
+        <p className="font-bold">{selectedPinForComments.title}</p>
 
-              <button
-                onClick={handleLogin}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-semibold"
-              >
-                Giriş Yap
-              </button>
-
-              <p className="text-center text-sm">
-                Hesabın yok mu?{" "}
-                <button
-                  onClick={() => setAuthMode("register")}
-                  className="text-purple-600 font-semibold"
-                >
-                  Kayıt Ol
-                </button>
-              </p>
-
-              <div className="text-xs text-center text-gray-500 border-t pt-4">
-                <p className="font-semibold mb-1">
-                  ROJ: EMRE AKİCİ
-                </p>
-                
-          ) : (
-            <div className="space-y-4">
-              <input
-                type="text"
-                value={registerForm.name}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, name: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none"
-                placeholder="Ad Soyad"
-              />
-
-              <input
-                type="email"
-                value={registerForm.email}
-                onChange={(e) =>
-                  setRegisterForm({ ...registerForm, email: e.target.value })
-                }
-                className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none"
-                placeholder="Email"
-              />
-
-              <input
-                type="password"
-                value={registerForm.password}
-                onChange={(e) =>
-                  setRegisterForm({
-                    ...registerForm,
-                    password: e.target.value
-                  })
-                }
-                className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none"
-                placeholder="Şifre (min 6)"
-              />
-
-              <button
-                onClick={handleRegister}
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-semibold"
-              >
-                Kayıt Ol
-              </button>
-
-              <p className="text-center text-sm">
-                Hesabın var mı?{" "}
-                <button
-                  onClick={() => setAuthMode("login")}
-                  className="text-purple-600 font-semibold"
-                >
-                  Giriş Yap
-                </button>
-              </p>
+        <div className="space-y-2">
+          {selectedPinForComments.comments.map((c, i) => (
+            <div key={i} className="bg-gray-100 p-2 rounded">
+              <span className="font-semibold">{c.user}: </span>
+              {c.text}
             </div>
-          )}
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            className="flex-1 border rounded px-2"
+            value={commentText}
+            onChange={(e) => setCommentText(e.target.value)}
+            placeholder="Yorum yaz..."
+          />
+          <button
+            onClick={addComment}
+            className="px-4 py-2 bg-purple-500 text-white rounded"
+          >
+            Gönder
+          </button>
         </div>
       </div>
     );
   }
 
-  /* ---------------- MAIN UI ---------------- */
+  // --- Pin ekleme ---
+  if (activeTab === "add") {
+    return (
+      <div className="p-4 space-y-3">
+        <h2 className="text-xl font-bold">Yeni Pin Ekle</h2>
 
+        <input
+          className="w-full border rounded px-3 py-2"
+          placeholder="Başlık"
+          value={newPin.title}
+          onChange={(e) => setNewPin({ ...newPin, title: e.target.value })}
+        />
+
+        <input
+          className="w-full border rounded px-3 py-2"
+          placeholder="Resim URL"
+          value={newPin.image}
+          onChange={(e) => setNewPin({ ...newPin, image: e.target.value })}
+        />
+
+        <input
+          className="w-full border rounded px-3 py-2"
+          placeholder="Kategori"
+          value={newPin.category}
+          onChange={(e) => setNewPin({ ...newPin, category: e.target.value })}
+        />
+
+        <button
+          onClick={addPin}
+          className="w-full bg-green-500 text-white py-2 rounded"
+        >
+          Ekle
+        </button>
+      </div>
+    );
+  }
+
+  // --- Mesajlaşma ---
+  if (activeTab === "messages") {
+    return (
+      <div className="p-4 space-y-3">
+        <h2 className="text-xl font-bold">Mesajlar</h2>
+
+        <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          {messages.map((m, i) => (
+            <div key={i} className="bg-gray-100 p-2 rounded">
+              <span className="font-semibold">{m.sender}: </span>
+              {m.text}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex gap-2">
+          <input
+            className="flex-1 border rounded px-2"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            placeholder="Mesaj yaz..."
+          />
+          <button
+            onClick={sendMessage}
+            className="px-4 py-2 bg-blue-500 text-white rounded"
+          >
+            Gönder
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Profil ---
+  if (activeTab === "profile") {
+    return (
+      <div className="p-4 space-y-3">
+        <h2 className="text-xl font-bold">Profil</h2>
+
+        <p>Kullanıcı: {currentUser.username}</p>
+
+        <p>Kaydedilen pin sayısı: {savedPins.length}</p>
+
+        <button
+          onClick={() => {
+            setCurrentUser(null);
+          }}
+          className="text-red-500 flex gap-2"
+        >
+          <LogOut size={16} /> Çıkış Yap
+        </button>
+      </div>
+    );
+  }
+
+  // --- ANA SAYFA ---
   return (
-    <div>🎉 Pinspire başarıyla düzeltildi — şimdi render akışı hazır.</div>
-  );
-};
+    <div className="pb-20">
+      <div className="p-4 space-y-3">
+        {/* Arama */}
+        <input
+          className="w-full border rounded px-3 py-2"
+          placeholder="Ara..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
 
-export default PinspireApp;
+        {/* Kategoriler */}
+        <div className="flex gap-2 flex-wrap">
+          {["Tümü", "Doğa", "Tasarım", "Sanat", "Moda"].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1 rounded-full border ${
+                selectedCategory === cat
+                  ? "bg-purple-500 text-white"
+                  : "bg-white"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        {/* Masonry grid */}
+        <div className="columns-2 gap-3">
+          {filteredPins.map((pin) => (
+            <div key={pin.id} className="mb-3 break-inside-avoid bg-white rounded-xl shadow">
+              <img
+                src={pin.image}
+                className="w-full rounded-t-xl"
+              />
+
+              <div className="p-2 space-y-1">
+                <p className="font-semibold">{pin.title}</p>
+
+                <div className="flex justify-between">
+                  <button onClick={() => toggleLike(pin.id)}>
+                    <Heart
+                      size={18}
+                      color={likedPins.includes(pin.id) ? "red" : "black"}
+                    />
+                  </button>
+
+                  <button onClick={() => toggleSave(pin.id)}>
+                    <Bookmark size={18} />
+                  </button>
+
+                  <button onClick={() => setSelectedPinForComments(pin)}>
+                    <MessageCircle size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Alt navbar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-inner flex justify-around py-3">
+        <button onClick={() => setActiveTab("home")}>
+          <Home />
+        </button>
+        <button onClick={() => setActiveTab("add")}>
+          <Plus />
+        </button>
+        <button onClick={() => setActiveTab("messages")}>
+          <Send />
+        </button>
+        <button onClick={() => setActiveTab("profile")}>
+          <User />
+        </button>
+      </div>
+    </div>
+  );
+}
