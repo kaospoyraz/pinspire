@@ -1,33 +1,14 @@
 import React, { useState } from "react";
-import {
-  Home,
-  User,
-  Plus,
-  Moon,
-  Sun,
-  LogOut,
-  Heart,
-  MessageCircle,
-  UserPlus,
-  UserCheck
-} from "lucide-react";
 
 const App = () => {
-  // ---------- THEME ----------
   const [darkMode, setDarkMode] = useState(false);
 
-  // ---------- AUTH ----------
   const [currentUser, setCurrentUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [verificationMode, setVerificationMode] = useState(false);
 
-  // ---------- LOGIN ----------
-  const [loginForm, setLoginForm] = useState({
-    email: "",
-    password: ""
-  });
+  const [loginForm, setLoginForm] = useState({ email: "", password: "" });
 
-  // ---------- REGISTER ----------
   const [registerForm, setRegisterForm] = useState({
     username: "",
     name: "",
@@ -35,45 +16,33 @@ const App = () => {
     password: "",
     city: "",
     country: "",
-    birthday: ""
+    birthday: "",
   });
 
-  // ---------- USERS ----------
-  const [users, setUsers] = useState([]);
-
-  // ---------- VERIFICATION ----------
   const [sentCode, setSentCode] = useState("");
   const [enteredCode, setEnteredCode] = useState("");
 
-  // ---------- POSTS ----------
-  const [posts, setPosts] = useState([]);
-  const [newPost, setNewPost] = useState({
-    type: "text",
-    content: ""
-  });
+  const [users, setUsers] = useState([]);
 
-  // ---------- PROFILE ----------
+  const [posts, setPosts] = useState([]);
+  const [newPostFile, setNewPostFile] = useState(null);
+  const [newPostType, setNewPostType] = useState("image");
+
   const [showProfile, setShowProfile] = useState(false);
   const [profileEdit, setProfileEdit] = useState({
-    avatar: "",
-    bio: ""
+    avatarFile: null,
+    bio: "",
   });
 
-  // ---------- FOLLOW ----------
-  const toggleFollow = (user) => {
-    if (!currentUser) return;
+  const logoUrl = "https://i.hizliresim.com/jtv095w.jpeg";
 
-    const isFollowing = currentUser.following?.includes(user.username);
-
-    setCurrentUser({
-      ...currentUser,
-      following: isFollowing
-        ? currentUser.following.filter((u) => u !== user.username)
-        : [...(currentUser.following || []), user.username]
-    });
+  // ANA SAYFAYI YENİLE
+  const refreshHome = () => {
+    setShowProfile(false);
+    setPosts([...posts]); // basit yenile
   };
 
-  // ---------- SEND CODE ----------
+  // DOĞRULAMA KODU GÖNDER
   const sendVerificationCode = () => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     setSentCode(code);
@@ -81,87 +50,89 @@ const App = () => {
     setVerificationMode(true);
   };
 
-  // ---------- REGISTER ----------
+  // KAYIT
   const handleRegister = () => {
     if (!registerForm.username) return alert("Kullanıcı adı zorunlu");
     if (!registerForm.email || !registerForm.password)
-      return alert("E-posta ve şifre zorunlu");
+      return alert("Email ve şifre zorunlu");
 
     sendVerificationCode();
   };
 
-  // ---------- VERIFY ----------
+  // DOĞRULAMA
   const verifyCode = () => {
     if (enteredCode !== sentCode) return alert("Kod hatalı");
 
-    const user = {
+    const newUser = {
       ...registerForm,
-      avatar: "https://i.pravatar.cc/150",
+      avatar: null, // otomatik yok
       bio: "",
-      followers: [],
-      following: []
     };
 
-    setUsers([...users, user]);
-    setCurrentUser(user);
+    setUsers([...users, newUser]);
+    setCurrentUser(newUser);
     setVerificationMode(false);
-    alert("Doğrulama başarılı 🎉");
+    alert("Kayıt tamamlandı");
   };
 
-  // ---------- LOGIN ----------
+  // GİRİŞ
   const handleLogin = () => {
     const found = users.find(
       (u) =>
         u.email === loginForm.email && u.password === loginForm.password
     );
-    if (!found) return alert("Bilgiler yanlış");
-
+    if (!found) return alert("Bilgiler hatalı");
     setCurrentUser(found);
   };
 
-  // ---------- NEW POST ----------
+  // GÖNDERİ EKLE (GALERİDEN)
   const addPost = () => {
-    if (!newPost.content) return;
+    if (!newPostFile) return alert("Dosya seçmedin");
+
+    const url = URL.createObjectURL(newPostFile);
 
     setPosts([
       ...posts,
       {
         id: Date.now(),
         user: currentUser.username,
-        type: newPost.type,
-        content: newPost.content,
-        likes: []
-      }
+        type: newPostType,
+        url,
+      },
     ]);
 
-    setNewPost({ type: "text", content: "" });
+    setNewPostFile(null);
   };
 
-  // ---------- LIKE ----------
-  const toggleLike = (post) => {
-    const liked = post.likes.includes(currentUser.username);
-    post.likes = liked
-      ? post.likes.filter((u) => u !== currentUser.username)
-      : [...post.likes, currentUser.username];
+  // PROFİL FOTOĞRAFI KAYDET
+  const saveAvatar = () => {
+    if (!profileEdit.avatarFile) return;
 
-    setPosts([...posts]);
+    const url = URL.createObjectURL(profileEdit.avatarFile);
+
+    setCurrentUser({
+      ...currentUser,
+      avatar: url,
+    });
   };
 
-  // ---------- THEME ----------
   const theme = darkMode
     ? "bg-black text-white"
     : "bg-gray-100 text-gray-900";
 
-  // ---------- REGISTER SCREEN ----------
+  /* ================= AUTH: REGISTER ================= */
+
   if (!currentUser && !verificationMode && authMode === "register") {
     return (
       <div className={`${theme} min-h-screen flex items-center justify-center`}>
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
+
           <div className="flex justify-center mb-4">
             <img
-              src="https://i.hizliresim.com/jtv095w.jpeg"
-              className="w-28 h-28 rounded-2xl"
+              src={logoUrl}
               alt="logo"
+              className="w-28 h-28 rounded-2xl cursor-pointer"
+              onClick={refreshHome}
             />
           </div>
 
@@ -173,7 +144,7 @@ const App = () => {
             ["Email", "email"],
             ["Şifre", "password"],
             ["Şehir", "city"],
-            ["Ülke", "country"]
+            ["Ülke", "country"],
           ].map(([ph, key]) => (
             <input
               key={key}
@@ -188,12 +159,9 @@ const App = () => {
 
           <input
             type="date"
-            className="w-full p-2 mb-2 rounded"
+            className="w-full p-2 mb-3 rounded"
             onChange={(e) =>
-              setRegisterForm({
-                ...registerForm,
-                birthday: e.target.value
-              })
+              setRegisterForm({ ...registerForm, birthday: e.target.value })
             }
           />
 
@@ -204,32 +172,28 @@ const App = () => {
             Devam Et
           </button>
 
-          <p className="text-center mt-2">
-            Hesabın var mı?{" "}
-            <button
-              className="text-purple-400"
-              onClick={() => setAuthMode("login")}
-            >
-              Giriş Yap
-            </button>
+          <p
+            className="text-sm mt-2 text-center cursor-pointer"
+            onClick={() => setAuthMode("login")}
+          >
+            Hesabın var mı? Giriş yap
           </p>
         </div>
       </div>
     );
   }
 
-  // ---------- VERIFICATION ----------
+  /* ================= AUTH: EMAIL VERIFY ================= */
+
   if (verificationMode && !currentUser) {
     return (
       <div className={`${theme} min-h-screen flex items-center justify-center`}>
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
-          <h2 className="text-center font-bold mb-3">
-            E-posta Doğrulama
-          </h2>
+          <h2 className="text-center font-bold mb-3">E-posta Doğrulama</h2>
 
           <input
             className="w-full p-2 mb-2 rounded"
-            placeholder="Gönderilen kod"
+            placeholder="Gönderilen kodu gir"
             onChange={(e) => setEnteredCode(e.target.value)}
           />
 
@@ -244,16 +208,18 @@ const App = () => {
     );
   }
 
-  // ---------- LOGIN ----------
+  /* ================= AUTH: LOGIN ================= */
+
   if (!currentUser && authMode === "login") {
     return (
       <div className={`${theme} min-h-screen flex items-center justify-center`}>
         <div className="bg-white/10 backdrop-blur p-6 rounded-2xl w-96">
           <div className="flex justify-center mb-4">
             <img
-              src="https://i.hizliresim.com/jtv095w.jpeg"
-              className="w-28 h-28 rounded-2xl"
+              src={logoUrl}
               alt="logo"
+              className="w-28 h-28 rounded-2xl cursor-pointer"
+              onClick={refreshHome}
             />
           </div>
 
@@ -283,68 +249,64 @@ const App = () => {
             Giriş Yap
           </button>
 
-          <p className="text-center mt-2">
-            Hesabın yok mu?{" "}
-            <button
-              className="text-purple-400"
-              onClick={() => setAuthMode("register")}
-            >
-              Kayıt Ol
-            </button>
+          <p
+            className="text-sm mt-2 text-center cursor-pointer"
+            onClick={() => setAuthMode("register")}
+          >
+            Hesabın yok mu? Kayıt ol
           </p>
         </div>
       </div>
     );
   }
 
-  // ---------- MAIN APP ----------
+  /* ================= MAIN APP ================= */
+
   return (
     <div className={`${theme} min-h-screen`}>
+
+      {/* ÜST BAR */}
       <div className="flex justify-between items-center p-3">
 
         <img
-          src="https://i.hizliresim.com/jtv095w.jpeg"
-          className="w-10 h-10 rounded-xl"
+          src={logoUrl}
           alt="logo"
+          className="w-10 h-10 rounded-xl cursor-pointer"
+          onClick={refreshHome}
         />
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <button onClick={() => setDarkMode(!darkMode)}>
-            {darkMode ? <Sun /> : <Moon />}
+            {darkMode ? "Açık Mod" : "Koyu Mod"}
           </button>
 
           <button onClick={() => setShowProfile(!showProfile)}>
-            <User />
+            Profil
           </button>
 
-          <button onClick={() => setCurrentUser(null)}>
-            <LogOut />
-          </button>
+          <button onClick={() => setCurrentUser(null)}>Çıkış</button>
         </div>
       </div>
 
+      {/* ANA SAYFA / FEED */}
       {!showProfile && (
         <div className="p-3">
-          {/* NEW POST */}
+
           <h3 className="font-bold mb-2">Gönderi Ekle</h3>
 
           <select
             className="w-full p-2 rounded mb-2"
-            onChange={(e) =>
-              setNewPost({ ...newPost, type: e.target.value })
-            }
+            onChange={(e) => setNewPostType(e.target.value)}
           >
-            <option value="text">Yazı</option>
             <option value="image">Fotoğraf</option>
             <option value="video">Video</option>
           </select>
 
           <input
+            type="file"
+            accept={newPostType === "image" ? "image/*" : "video/*"}
             className="w-full p-2 rounded mb-2"
-            placeholder="Yazı / Görsel-Video linki"
-            onChange={(e) =>
-              setNewPost({ ...newPost, content: e.target.value })
-            }
+            onChange={(e) => setNewPostFile(e.target.files[0])}
           />
 
           <button
@@ -354,68 +316,63 @@ const App = () => {
             Paylaş
           </button>
 
-          {/* FEED */}
-          <h3 className="font-bold mt-4 mb-2">Akış</h3>
+          <h3 className="font-bold mt-4">Akış</h3>
 
           {posts.map((p) => (
-            <div key={p.id} className="border p-2 rounded mb-3">
-              <p className="text-sm text-purple-500">@{p.user}</p>
+            <div key={p.id} className="border p-2 rounded mt-2">
+              <p className="text-sm">@{p.user}</p>
 
-              {p.type === "text" && <p>{p.content}</p>}
-              {p.type === "image" && (
-                <img src={p.content} className="rounded mt-2" />
-              )}
+              {p.type === "image" && <img src={p.url} className="rounded" />}
+
               {p.type === "video" && (
-                <video controls className="rounded mt-2">
-                  <source src={p.content} />
+                <video controls className="rounded">
+                  <source src={p.url} />
                 </video>
               )}
-
-              <button
-                className="flex items-center gap-1 mt-2"
-                onClick={() => toggleLike(p)}
-              >
-                <Heart />
-                {p.likes.length}
-              </button>
             </div>
           ))}
         </div>
       )}
 
-      {/* PROFILE */}
+      {/* PROFİL SAYFASI */}
       {showProfile && (
         <div className="p-3">
-          <h3 className="font-bold mb-2">Profil</h3>
 
-          <img
-            src={currentUser.avatar}
-            className="w-24 h-24 rounded-full"
-          />
+          <h3 className="font-bold mb-2">Profilim</h3>
+
+          {currentUser.avatar ? (
+            <img
+              src={currentUser.avatar}
+              className="w-24 h-24 rounded-full"
+            />
+          ) : (
+            <div className="w-24 h-24 rounded-full bg-gray-400 flex items-center justify-center">
+              Fotoğraf Yok
+            </div>
+          )}
 
           <input
+            type="file"
+            accept="image/*"
             className="w-full p-2 mt-2 rounded"
-            placeholder="Yeni profil fotoğrafı linki"
             onChange={(e) =>
-              setProfileEdit({ ...profileEdit, avatar: e.target.value })
+              setProfileEdit({
+                ...profileEdit,
+                avatarFile: e.target.files[0],
+              })
             }
           />
 
           <button
             className="bg-blue-600 text-white w-full p-2 rounded mt-1"
-            onClick={() =>
-              setCurrentUser({
-                ...currentUser,
-                avatar: profileEdit.avatar || currentUser.avatar
-              })
-            }
+            onClick={saveAvatar}
           >
-            Fotoğrafı Güncelle
+            Profil Fotoğrafı Güncelle
           </button>
 
           <textarea
             className="w-full p-2 mt-3 rounded"
-            placeholder="Biyografi"
+            placeholder="Bio"
             onChange={(e) =>
               setProfileEdit({ ...profileEdit, bio: e.target.value })
             }
@@ -426,11 +383,11 @@ const App = () => {
             onClick={() =>
               setCurrentUser({
                 ...currentUser,
-                bio: profileEdit.bio || currentUser.bio
+                bio: profileEdit.bio || currentUser.bio,
               })
             }
           >
-            Bio Güncelle
+            Bio Kaydet
           </button>
         </div>
       )}
