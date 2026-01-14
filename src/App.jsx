@@ -2,17 +2,21 @@ import React, { useState, useMemo } from "react";
 
 const LOGO_URL = "https://i.hizliresim.com/jtv095w.jpeg";
 
-export default function App() {
-  /* ========= GLOBAL ========= */
+const App = () => {
+  /* ====== GLOBAL ====== */
   const [darkMode, setDarkMode] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
-  const [tab, setTab] = useState("home");
-
-  /* ========= AUTH ========= */
   const [authMode, setAuthMode] = useState("login");
   const [verifyCode, setVerifyCode] = useState("");
   const [sentCode, setSentCode] = useState(null);
 
+  /* ====== NAVIGATION ====== */
+  const [activeTab, setActiveTab] = useState("home");
+
+  /* ====== SEARCH ====== */
+  const [searchQuery, setSearchQuery] = useState("");
+
+  /* ====== AUTH FORMS ====== */
   const [loginForm, setLoginForm] = useState({
     email: "",
     password: ""
@@ -28,40 +32,51 @@ export default function App() {
     birthday: ""
   });
 
-  /* ========= DATA ========= */
+  /* ====== PROFILE EDIT ====== */
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editAvatarFile, setEditAvatarFile] = useState(null);
+  const [editBio, setEditBio] = useState("");
+
+  /* ====== DATA ====== */
   const [users, setUsers] = useState([]);
-  const [pins, setPins] = useState([]);
-  const [saved, setSaved] = useState([]);
-  const [liked, setLiked] = useState([]);
+  const [allPins, setAllPins] = useState([]);
+  const [savedPins, setSavedPins] = useState([]);
+  const [likedPins, setLikedPins] = useState([]);
 
-  /* ========= ADD PIN ========= */
-  const [showAdd, setShowAdd] = useState(false);
-  const [newFile, setNewFile] = useState(null);
-  const [newType, setNewType] = useState("image");
-  const [newTitle, setNewTitle] = useState("");
+  /* ====== ADD PIN ====== */
+  const [showAddPin, setShowAddPin] = useState(false);
+  const [newPinFile, setNewPinFile] = useState(null);
+  const [newPinType, setNewPinType] = useState("image");
+  const [newPinTitle, setNewPinTitle] = useState("");
 
-  /* ========= PIN PREVIEW ========= */
-  const [openedPin, setOpenedPin] = useState(null);
+  /* ====== PIN FULL VIEW ====== */
+  const [openPin, setOpenPin] = useState(null);
 
-  /* ========= SEARCH ========= */
-  const [searchQuery, setSearchQuery] = useState("");
-
-  /* ========= SEND VERIFY CODE ========= */
+  /* ====== SEND CODE ====== */
   const sendCode = () => {
     const c = Math.floor(100000 + Math.random() * 900000).toString();
     setSentCode(c);
-    alert("E-posta doğrulama kodu: " + c);
+    alert("Doğrulama kodun: " + c);
     setAuthMode("verify");
   };
 
-  /* ========= REGISTER ========= */
+  /* ====== REGISTER ====== */
   const handleRegister = () => {
     if (
       !registerForm.username ||
+      !registerForm.name ||
       !registerForm.email ||
-      !registerForm.password
+      !registerForm.password ||
+      !registerForm.city ||
+      !registerForm.country ||
+      !registerForm.birthday
     ) {
-      alert("Gerekli alanları doldurun");
+      alert("Boş yer bırakma");
+      return;
+    }
+
+    if (registerForm.password.length < 6) {
+      alert("Şifre en az 6 karakter olmalı");
       return;
     }
 
@@ -74,92 +89,102 @@ export default function App() {
       return;
     }
 
-    const u = {
+    const newUser = {
       id: Date.now(),
       ...registerForm,
+      avatar: null,
       bio: "",
-      avatar: null
+      posts: []
     };
 
-    setUsers((d) => [...d, u]);
-    setCurrentUser(u);
+    setUsers([...users, newUser]);
+    setCurrentUser(newUser);
+    alert("Kayıt tamamlandı");
   };
 
-  /* ========= LOGIN ========= */
+  /* ====== LOGIN ====== */
   const handleLogin = () => {
     const u = users.find(
       (x) =>
         x.email === loginForm.email && x.password === loginForm.password
     );
     if (!u) {
-      alert("E-posta veya şifre hatalı");
+      alert("Bilgiler hatalı");
       return;
     }
     setCurrentUser(u);
   };
 
-  /* ========= ADD PIN ========= */
+  /* ====== LIKE / SAVE ====== */
+  const toggleLike = (id) => {
+    setLikedPins((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
+  };
+
+  const toggleSave = (id) => {
+    setSavedPins((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id]
+    );
+  };
+
+  /* ====== ADD PIN ====== */
   const addPin = () => {
-    if (!newFile) {
-      alert("Dosya seçilmedi");
+    if (!newPinFile) {
+      alert("Seçili dosya yok");
       return;
     }
 
-    const url = URL.createObjectURL(newFile);
+    const url = URL.createObjectURL(newPinFile);
 
     const pin = {
       id: Date.now(),
       url,
-      title: newTitle,
-      type: newType,
-      owner: currentUser.username
+      type: newPinType,
+      title: newPinTitle,
+      userId: currentUser.id,
+      userName: currentUser.username
     };
 
-    setPins([pin, ...pins]);
-    setShowAdd(false);
-    setNewFile(null);
-    setNewTitle("");
+    setAllPins([pin, ...allPins]);
+
+    setShowAddPin(false);
+    setNewPinFile(null);
+    setNewPinTitle("");
   };
 
-  /* ========= LIKE & SAVE ========= */
-  const toggleLike = (id) =>
-    setLiked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  /* ====== FILTER ====== */
+  const filteredPins = useMemo(() => {
+    let p = allPins;
 
-  const toggleSave = (id) =>
-    setSaved((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    if (activeTab === "likes") p = p.filter((x) => likedPins.includes(x.id));
+    if (activeTab === "saved") p = p.filter((x) => savedPins.includes(x.id));
+    if (activeTab === "profile") p = p.filter((x) => x.userId === currentUser?.id);
 
-  /* ========= FILTER ========= */
-  const visiblePins = useMemo(() => {
-    let x = pins;
     if (searchQuery)
-      x = x.filter((p) =>
-        p.title.toLowerCase().includes(searchQuery.toLowerCase())
+      p = p.filter((x) =>
+        x.title?.toLowerCase().includes(searchQuery.toLowerCase())
       );
-    if (tab === "likes") x = x.filter((p) => liked.includes(p.id));
-    if (tab === "saved") x = x.filter((p) => saved.includes(p.id));
-    return x;
-  }, [pins, searchQuery, tab, liked, saved]);
 
-  /* ========= AUTH UI ========= */
+    return p;
+  }, [allPins, likedPins, savedPins, activeTab, searchQuery, currentUser]);
+
+  /* ====== AUTH UI ====== */
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow">
+        <div className="bg-white p-6 rounded-2xl w-96 shadow">
 
-          {/* Logo */}
-          <div className="flex justify-center mb-4">
-            <img
-              src={LOGO_URL}
-              className="w-28 h-28 rounded-xl cursor-pointer"
-              onClick={() => window.location.reload()}
-            />
+          <div className="flex justify-center mb-3">
+            <img src={LOGO_URL} className="w-16 h-16 rounded-xl" />
           </div>
 
-          {/* LOGIN */}
           {authMode === "login" && (
-            <div className="space-y-2">
+            <>
+              <h2 className="text-xl font-bold text-center mb-2">Giriş yap</h2>
+
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mt-2"
                 placeholder="E-posta"
                 value={loginForm.email}
                 onChange={(e) =>
@@ -169,7 +194,7 @@ export default function App() {
 
               <input
                 type="password"
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mt-2"
                 placeholder="Şifre"
                 value={loginForm.password}
                 onChange={(e) =>
@@ -178,42 +203,45 @@ export default function App() {
               />
 
               <button
-                className="w-full bg-purple-600 text-white p-2 rounded"
+                className="w-full bg-purple-600 text-white p-2 rounded mt-3"
                 onClick={handleLogin}
               >
                 Giriş yap
               </button>
 
-              <p className="text-center text-sm">
-                Hesabın yok mu?{" "}
-                <button
-                  className="text-purple-600"
-                  onClick={() => setAuthMode("register")}
-                >
-                  Kayıt ol
-                </button>
+              <p
+                className="text-center mt-2 text-sm cursor-pointer"
+                onClick={() => setAuthMode("register")}
+              >
+                Hesabın yok mu? Kayıt ol
               </p>
-            </div>
+            </>
           )}
 
-          {/* REGISTER */}
           {authMode === "register" && (
-            <div className="space-y-2">
+            <>
+              <h2 className="text-xl font-bold text-center mb-2">Kayıt ol</h2>
 
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mt-2"
                 placeholder="Kullanıcı adı"
                 value={registerForm.username}
                 onChange={(e) =>
-                  setRegisterForm({
-                    ...registerForm,
-                    username: e.target.value
-                  })
+                  setRegisterForm({ ...registerForm, username: e.target.value })
                 }
               />
 
               <input
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mt-2"
+                placeholder="Ad Soyad"
+                value={registerForm.name}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, name: e.target.value })
+                }
+              />
+
+              <input
+                className="w-full border p-2 rounded mt-2"
                 placeholder="E-posta"
                 value={registerForm.email}
                 onChange={(e) =>
@@ -223,141 +251,198 @@ export default function App() {
 
               <input
                 type="password"
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded mt-2"
                 placeholder="Şifre"
                 value={registerForm.password}
                 onChange={(e) =>
-                  setRegisterForm({
-                    ...registerForm,
-                    password: e.target.value
-                  })
+                  setRegisterForm({ ...registerForm, password: e.target.value })
+                }
+              />
+
+              <input
+                className="w-full border p-2 rounded mt-2"
+                placeholder="Ülke"
+                value={registerForm.country}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, country: e.target.value })
+                }
+              />
+
+              <input
+                className="w-full border p-2 rounded mt-2"
+                placeholder="Şehir"
+                value={registerForm.city}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, city: e.target.value })
+                }
+              />
+
+              <input
+                type="date"
+                className="w-full border p-2 rounded mt-2"
+                value={registerForm.birthday}
+                onChange={(e) =>
+                  setRegisterForm({ ...registerForm, birthday: e.target.value })
                 }
               />
 
               <button
-                className="w-full bg-purple-600 text-white p-2 rounded"
+                className="w-full bg-purple-600 text-white p-2 rounded mt-3"
                 onClick={handleRegister}
               >
-                Devam et (Kod al)
+                Doğrulama kodu al
               </button>
-            </div>
+
+              <p
+                className="text-center mt-2 text-sm cursor-pointer"
+                onClick={() => setAuthMode("login")}
+              >
+                Zaten hesabın var mı? Giriş yap
+              </p>
+            </>
           )}
 
-          {/* VERIFY */}
           {authMode === "verify" && (
-            <div className="space-y-2">
+            <>
+              <h2 className="text-xl font-bold text-center mb-2">
+                E-posta doğrulama
+              </h2>
+
               <input
-                className="w-full border p-2 rounded"
-                placeholder="Doğrulama kodu"
+                className="w-full border p-2 rounded mt-2"
+                placeholder="Gelen kodu yaz"
                 value={verifyCode}
                 onChange={(e) => setVerifyCode(e.target.value)}
               />
 
               <button
-                className="w-full bg-green-600 text-white p-2 rounded"
+                className="w-full bg-green-600 text-white p-2 rounded mt-3"
                 onClick={confirmCode}
               >
-                Onayla
+                Hesabı oluştur
               </button>
-            </div>
+            </>
           )}
         </div>
       </div>
     );
   }
 
-  /* ========= MAIN UI ========= */
+  /* ====== MAIN UI ====== */
   return (
-    <div className="min-h-screen">
+    <div className={darkMode ? "bg-gray-900 text-white min-h-screen" : "bg-gray-100 min-h-screen"}>
 
       {/* HEADER */}
-      <div className="flex items-center justify-between p-3 bg-white shadow">
+      <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow">
         <img
           src={LOGO_URL}
-          className="w-10 h-10 rounded-xl cursor-pointer"
-          onClick={() => setTab("home")}
+          className="w-12 h-12 rounded-xl cursor-pointer"
+          onClick={() => setActiveTab("home")}
         />
+
+        <div className="flex gap-3">
+          <button onClick={() => setDarkMode(!darkMode)}>
+            {darkMode ? "Açık mod" : "Koyu mod"}
+          </button>
+          <button onClick={() => setCurrentUser(null)} className="text-red-500">
+            Çıkış
+          </button>
+        </div>
+      </div>
+
+      {/* SEARCH */}
+      <div className="p-3">
         <input
-          className="border p-2 rounded w-1/2"
-          placeholder="Ara"
+          className="w-full border p-2 rounded"
+          placeholder="Ara..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <button onClick={() => setCurrentUser(null)}>Çıkış</button>
       </div>
 
-      {/* PIN GRID */}
-      <div className="grid grid-cols-2 gap-3 p-3">
-        {visiblePins.map((p) => (
+      {/* GRID */}
+      <div className="grid grid-cols-2 gap-3 p-3 pb-20">
+        {filteredPins.map((p) => (
           <div
             key={p.id}
-            className="bg-white rounded-xl shadow cursor-pointer"
-            onClick={() => setOpenedPin(p)}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow cursor-pointer"
+            onClick={() => setOpenPin(p)}
           >
             {p.type === "image" ? (
-              <img src={p.url} className="rounded-xl object-cover h-44 w-full" />
+              <img src={p.url} className="rounded-xl h-44 w-full object-cover" />
             ) : (
-              <video src={p.url} className="rounded-xl h-44 w-full" />
+              <video src={p.url} className="rounded-xl h-44 w-full object-cover" />
             )}
-            <div className="p-2 text-sm">{p.title}</div>
           </div>
         ))}
       </div>
 
-      {/* OPENED PIN FULLSCREEN */}
-      {openedPin && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-3 w-96 max-h-[90vh] overflow-y-auto">
+      {/* FULLSCREEN PIN */}
+      {openPin && (
+        <div className="fixed inset-0 bg-black/80 overflow-y-auto">
+          <div className="max-w-xl mx-auto mt-6 bg-white dark:bg-gray-900 rounded-2xl p-3">
 
-            {openedPin.type === "image" ? (
-              <img src={openedPin.url} className="rounded-xl w-full" />
+            {openPin.type === "image" ? (
+              <img src={openPin.url} className="w-full rounded-xl" />
             ) : (
-              <video src={openedPin.url} controls className="rounded-xl w-full" />
+              <video src={openPin.url} controls className="w-full rounded-xl" />
             )}
 
-            <h2 className="mt-2 text-lg font-semibold">{openedPin.title}</h2>
-            <p className="text-sm text-gray-600">Paylaşan: {openedPin.owner}</p>
+            <p className="mt-2 font-semibold">{openPin.title}</p>
 
-            <div className="flex gap-2 mt-2">
-              <button onClick={() => toggleLike(openedPin.id)}>Beğen</button>
-              <button onClick={() => toggleSave(openedPin.id)}>Kaydet</button>
-              <button onClick={() => setOpenedPin(null)}>Kapat</button>
+            <div className="flex justify-between mt-2">
+              <button onClick={() => toggleLike(openPin.id)}>♥ Beğen</button>
+              <button onClick={() => toggleSave(openPin.id)}>★ Kaydet</button>
             </div>
 
-            {/* önerilenler */}
-            <h3 className="mt-3 font-semibold">Önerilenler</h3>
+            <button
+              className="w-full mt-3 p-2 bg-red-500 text-white rounded"
+              onClick={() => setOpenPin(null)}
+            >
+              Kapat
+            </button>
+          </div>
 
-            {pins.slice(0, 4).map((r) => (
-              <div
-                key={r.id}
-                className="mt-2 bg-gray-100 rounded-lg p-2 cursor-pointer"
-                onClick={() => setOpenedPin(r)}
-              >
-                {r.title}
-              </div>
-            ))}
+          <div className="p-4 grid grid-cols-2 gap-3 pb-10">
+            {allPins
+              .filter((x) => x.id !== openPin.id)
+              .slice(0, 20)
+              .map((s) => (
+                <div key={s.id} onClick={() => setOpenPin(s)}>
+                  <img src={s.url} className="rounded-xl h-36 w-full object-cover" />
+                </div>
+              ))}
           </div>
         </div>
       )}
 
       {/* ADD BUTTON */}
       <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-20 right-5 bg-purple-600 text-white rounded-full p-4"
+        onClick={() => setShowAddPin(true)}
+        className="fixed bottom-24 right-4 bg-purple-600 text-white p-4 rounded-full"
       >
         +
       </button>
 
-      {/* ADD MODAL */}
-      {showAdd && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
-          <div className="bg-white rounded-xl p-3 w-80">
-            <h2>Paylaşım ekle</h2>
+      {/* NAV BAR */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow flex justify-around p-2 text-sm">
+        <button onClick={() => setActiveTab("home")}>Ana sayfa</button>
+        <button onClick={() => setActiveTab("explore")}>Keşfet</button>
+        <button onClick={() => setActiveTab("likes")}>Beğeniler</button>
+        <button onClick={() => setActiveTab("saved")}>Kaydedilenler</button>
+        <button onClick={() => setActiveTab("profile")}>Profil</button>
+      </div>
+
+      {/* ADD PIN MODAL */}
+      {showAddPin && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl w-80">
+            <h3>Paylaşım ekle</h3>
 
             <select
-              className="w-full border p-2 mt-2 rounded"
-              value={newType}
-              onChange={(e) => setNewType(e.target.value)}
+              className="w-full border p-2 rounded mt-2"
+              value={newPinType}
+              onChange={(e) => setNewPinType(e.target.value)}
             >
               <option value="image">Fotoğraf</option>
               <option value="video">Video</option>
@@ -365,43 +450,83 @@ export default function App() {
 
             <input
               type="file"
-              accept={newType === "image" ? "image/*" : "video/*"}
+              accept={newPinType === "image" ? "image/*" : "video/*"}
               className="w-full mt-2"
-              onChange={(e) => setNewFile(e.target.files?.[0] || null)}
+              onChange={(e) => setNewPinFile(e.target.files[0])}
             />
 
             <input
               className="w-full border p-2 rounded mt-2"
               placeholder="Başlık"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
+              value={newPinTitle}
+              onChange={(e) => setNewPinTitle(e.target.value)}
             />
 
             <button
-              onClick={addPin}
               className="w-full bg-purple-600 text-white p-2 rounded mt-2"
+              onClick={addPin}
             >
               Paylaş
             </button>
 
-            <button
-              onClick={() => setShowAdd(false)}
-              className="w-full mt-1"
-            >
+            <button className="w-full mt-2" onClick={() => setShowAddPin(false)}>
               Kapat
             </button>
           </div>
         </div>
       )}
 
-      {/* BOTTOM NAV */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white shadow flex justify-around p-2">
-        <button onClick={() => setTab("home")}>Ana sayfa</button>
-        <button onClick={() => setTab("explore")}>Keşfet</button>
-        <button onClick={() => setTab("likes")}>Beğeniler</button>
-        <button onClick={() => setTab("saved")}>Kaydedilenler</button>
-        <button onClick={() => setTab("profile")}>Profil</button>
-      </div>
+      {/* PROFILE EDIT */}
+      {editProfileOpen && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center">
+          <div className="bg-white p-4 rounded-xl w-80">
+            <h3>Profili düzenle</h3>
+
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full mt-2"
+              onChange={(e) => setEditAvatarFile(e.target.files[0])}
+            />
+
+            <textarea
+              className="w-full border p-2 rounded mt-2"
+              placeholder="Biyografi"
+              value={editBio}
+              onChange={(e) => setEditBio(e.target.value)}
+            />
+
+            <button
+              className="w-full bg-green-600 text-white p-2 rounded mt-2"
+              onClick={() => {
+                let avatarUrl = currentUser.avatar;
+
+                if (editAvatarFile) {
+                  avatarUrl = URL.createObjectURL(editAvatarFile);
+                }
+
+                const updated = {
+                  ...currentUser,
+                  avatar: avatarUrl,
+                  bio: editBio
+                };
+
+                setCurrentUser(updated);
+                setUsers(users.map((u) => (u.id === updated.id ? updated : u)));
+                setEditProfileOpen(false);
+              }}
+            >
+              Kaydet
+            </button>
+
+            <button className="w-full mt-2" onClick={() => setEditProfileOpen(false)}>
+              Kapat
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
+
+export default App;
