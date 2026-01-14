@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from "react";
 import { 
   Search, Heart, User, Home, Plus, Bookmark, X, LogOut, Send, 
-  MessageCircle, UserPlus, UserCheck, Image as ImageIcon, Video, Type, Mail 
+  MessageCircle, UserPlus, UserCheck, Image as ImageIcon, Video, Type, Mail,
+  Download, Edit, Camera, RefreshCw
 } from "lucide-react";
 
 const PinspireApp = () => {
@@ -19,28 +20,31 @@ const PinspireApp = () => {
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showFullImage, setShowFullImage] = useState(null);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [registerForm, setRegisterForm] = useState({ 
     firstName: "", lastName: "", username: "", email: "", 
-    city: "", country: "", birthDate: "", password: "" 
+    city: "", country: "", birthDate: "", password: "",
+    avatar: "", interests: []
   });
-  const [newPost, setNewPost] = useState({ 
-    type: "photo", title: "", description: "", 
-    category: "Tasarım", media: null 
-  });
+  const [editProfileForm, setEditProfileForm] = useState({ name: "", bio: "", avatar: "" });
+  const [newPost, setNewPost] = useState({ type: "photo", title: "", description: "", category: "Tasarım", media: null });
   const [newComment, setNewComment] = useState("");
   const [comments, setComments] = useState({});
   const [savedPins, setSavedPins] = useState([]);
   const [likedPins, setLikedPins] = useState([]);
 
+  const interestOptions = ["Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor", "Müzik"];
+
   const PINSPIRE_BOT = { 
     id: 0, name: "Pinspire Bot", username: "pinspire_bot", 
     email: "bot@pinspire.com", avatar: LOGO_URL, 
-    bio: "Resmi Pinspire Botu", followers: 99999, 
-    following: 0, followingList: [] 
+    bio: "Resmi Pinspire Botu - Her gün yeni ilham", 
+    followers: 99999, following: 0, followingList: [] 
   };
 
   const [users, setUsers] = useState([
@@ -51,15 +55,37 @@ const PinspireApp = () => {
   ]);
 
   const [allPins, setAllPins] = useState([
-    { id: 101, image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400", title: "Yapay Zeka", description: "AI teknolojisi", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 2341, likes: 1876, commentCount: 234 },
-    { id: 102, image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400", title: "Doğa", description: "Manzaralar", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 3421, likes: 2987, commentCount: 456 },
-    { id: 103, image: "https://images.unsplash.com/photo-1495567720989-cebdbdd97913?w=400", title: "Aşk", description: "Sevgi", category: "Duygu", userId: 0, userName: "Pinspire Bot", saves: 4532, likes: 3654, commentCount: 567 },
-    { id: 1, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400", title: "Modern Ofis", description: "Minimal", category: "Tasarım", userId: 1, userName: "Ahmet Yılmaz", saves: 234, likes: 145, commentCount: 12 },
-    { id: 2, image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=400", title: "Mimari", description: "Yapılar", category: "Mimari", userId: 3, userName: "Mehmet Demir", saves: 456, likes: 289, commentCount: 34 },
-    { id: 3, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400", title: "Moda", description: "Trend", category: "Moda", userId: 2, userName: "Zeynep Kaya", saves: 678, likes: 534, commentCount: 45 },
+    { id: 101, image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800", title: "Yapay Zeka", description: "AI teknolojisi", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 2341, likes: 1876, commentCount: 234 },
+    { id: 102, image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800", title: "Doğa", description: "Manzaralar", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 3421, likes: 2987, commentCount: 456 },
+    { id: 103, image: "https://images.unsplash.com/photo-1495567720989-cebdbdd97913?w=800", title: "Aşk", description: "Sevgi", category: "Duygu", userId: 0, userName: "Pinspire Bot", saves: 4532, likes: 3654, commentCount: 567 },
+    { id: 104, image: "https://images.unsplash.com/photo-1483058712412-4245e9b90334?w=800", title: "Sahil Günbatımı", description: "Huzurun renkleri", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 2890, likes: 2341, commentCount: 189 },
+    { id: 105, image: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800", title: "Teknoloji", description: "Dijital dünya", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 1987, likes: 1654, commentCount: 234 },
+    { id: 106, image: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?w=800", title: "Minimalist", description: "Sadelik", category: "Tasarım", userId: 0, userName: "Pinspire Bot", saves: 3421, likes: 2876, commentCount: 345 },
+    { id: 107, image: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800", title: "Dağ Zirvesi", description: "Zirve", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 2765, likes: 2198, commentCount: 167 },
+    { id: 108, image: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800", title: "Veri Analizi", description: "Sayılar", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 1543, likes: 1287, commentCount: 98 },
+    { id: 109, image: "https://images.unsplash.com/photo-1511884642898-4c92249e20b6?w=800", title: "Moda", description: "Trend", category: "Moda", userId: 0, userName: "Pinspire Bot", saves: 4231, likes: 3654, commentCount: 456 },
+    { id: 110, image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800", title: "Yemek", description: "Gastronomi", category: "Yemek", userId: 0, userName: "Pinspire Bot", saves: 3987, likes: 3234, commentCount: 389 },
+    { id: 111, image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800", title: "Portre", description: "İnsan", category: "Sanat", userId: 0, userName: "Pinspire Bot", saves: 2876, likes: 2345, commentCount: 234 },
+    { id: 112, image: "https://images.unsplash.com/photo-1477346611705-65d1883cee1e?w=800", title: "Orman", description: "Doğa", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 3124, likes: 2567, commentCount: 198 },
+    { id: 113, image: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=800", title: "Bulut", description: "Veri", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 1876, likes: 1543, commentCount: 123 },
+    { id: 114, image: "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=800", title: "Bisiklet", description: "Özgürlük", category: "Spor", userId: 0, userName: "Pinspire Bot", saves: 2341, likes: 1987, commentCount: 167 },
+    { id: 115, image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800", title: "Ev", description: "Konfor", category: "Tasarım", userId: 0, userName: "Pinspire Bot", saves: 4123, likes: 3456, commentCount: 423 },
+    { id: 116, image: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=800", title: "Yıldızlar", description: "Evren", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 3567, likes: 2987, commentCount: 289 },
+    { id: 117, image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800", title: "Yazılım", description: "Kod", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 1654, likes: 1432, commentCount: 112 },
+    { id: 118, image: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800", title: "Sokak Modası", description: "Urban", category: "Moda", userId: 0, userName: "Pinspire Bot", saves: 3876, likes: 3234, commentCount: 398 },
+    { id: 119, image: "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?w=800", title: "Kahvaltı", description: "Lezzet", category: "Yemek", userId: 0, userName: "Pinspire Bot", saves: 4231, likes: 3567, commentCount: 445 },
+    { id: 120, image: "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=800", title: "Soyut", description: "Renkler", category: "Sanat", userId: 0, userName: "Pinspire Bot", saves: 2654, likes: 2198, commentCount: 178 },
+    { id: 121, image: "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=800", title: "Orman", description: "Yaşam", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 2987, likes: 2456, commentCount: 201 },
+    { id: 122, image: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800", title: "Robot", description: "AI", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 2123, likes: 1876, commentCount: 145 },
+    { id: 123, image: "https://images.unsplash.com/photo-1434494878577-86c23bcb06b9?w=800", title: "Ayakkabı", description: "Performans", category: "Moda", userId: 0, userName: "Pinspire Bot", saves: 3456, likes: 2876, commentCount: 312 },
+    { id: 124, image: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800", title: "Pizza", description: "İtalyan", category: "Yemek", userId: 0, userName: "Pinspire Bot", saves: 4567, likes: 3876, commentCount: 478 },
+    { id: 125, image: "https://images.unsplash.com/photo-1547826039-bfc35e0f1ea8?w=800", title: "Heykel", description: "Sanat", category: "Sanat", userId: 0, userName: "Pinspire Bot", saves: 2345, likes: 1987, commentCount: 156 },
+    { id: 1, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800", title: "Modern Ofis", description: "Minimal", category: "Tasarım", userId: 1, userName: "Ahmet Yılmaz", saves: 234, likes: 145, commentCount: 12 },
+    { id: 2, image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800", title: "Mimari", description: "Yapılar", category: "Mimari", userId: 3, userName: "Mehmet Demir", saves: 456, likes: 289, commentCount: 34 },
+    { id: 3, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800", title: "Moda", description: "Trend", category: "Moda", userId: 2, userName: "Zeynep Kaya", saves: 678, likes: 534, commentCount: 45 },
   ]);
 
-  const categories = ["Tümü", "Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu"];
+  const categories = ["Tümü", "Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor"];
 
   const handleLogin = () => {
     const user = users.find(u => u.email === loginForm.email && u.password === loginForm.password);
@@ -68,10 +94,11 @@ const PinspireApp = () => {
   };
 
   const handleRegister = () => {
-    const { firstName, lastName, username, email, city, country, birthDate, password } = registerForm;
-    if (!firstName || !lastName || !username || !email || !city || !country || !birthDate || !password) {
-      alert("Lütfen tüm alanları doldurun!"); return;
+    const { firstName, lastName, username, email, city, country, birthDate, password, avatar, interests } = registerForm;
+    if (!firstName || !lastName || !username || !email || !city || !country || !birthDate || !password || !avatar) {
+      alert("Lütfen tüm alanları doldurun ve profil fotoğrafı seçin!"); return;
     }
+    if (interests.length === 0) { alert("En az bir ilgi alanı seçin!"); return; }
     if (password.length < 6) { alert("Şifre en az 6 karakter olmalı!"); return; }
     if (users.find(u => u.email === email)) { alert("Bu email kayıtlı!"); return; }
     const code = Math.floor(100000 + Math.random() * 900000).toString();
@@ -80,28 +107,58 @@ const PinspireApp = () => {
 
   const handleVerification = () => {
     if (verificationCode === sentCode) {
-      const { firstName, lastName, username, email, city, country, birthDate, password } = registerForm;
+      const { firstName, lastName, username, email, city, country, birthDate, password, avatar, interests } = registerForm;
       const newUser = { 
         id: users.length + 1, name: `${firstName} ${lastName}`, username, email, password, 
-        city, country, birthDate, avatar: `https://i.pravatar.cc/150?img=${users.length + 10}`, 
-        bio: "Yeni kullanıcı", followers: 0, following: 0, followingList: [] 
+        city, country, birthDate, avatar, interests,
+        bio: `${interests.join(", ")} ile ilgileniyorum`, 
+        followers: 0, following: 0, followingList: [] 
       };
       setUsers([...users, newUser]); setCurrentUser(newUser);
-      setRegisterForm({ firstName: "", lastName: "", username: "", email: "", city: "", country: "", birthDate: "", password: "" });
+      setRegisterForm({ firstName: "", lastName: "", username: "", email: "", city: "", country: "", birthDate: "", password: "", avatar: "", interests: [] });
       setVerificationStep(false); setVerificationCode(""); alert("Kayıt başarılı!");
     } else { alert("Kod hatalı!"); }
   };
 
+  const handleProfileImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setRegisterForm({ ...registerForm, avatar: reader.result });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleEditProfileImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setEditProfileForm({ ...editProfileForm, avatar: reader.result });
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const toggleInterest = (interest) => {
+    setRegisterForm(prev => ({
+      ...prev,
+      interests: prev.interests.includes(interest) 
+        ? prev.interests.filter(i => i !== interest)
+        : [...prev.interests, interest]
+    }));
+  };
+
+  const handleSaveProfile = () => {
+    if (!editProfileForm.name.trim()) { alert("İsim boş olamaz!"); return; }
+    setUsers(users.map(u => u.id === currentUser.id ? { ...u, name: editProfileForm.name, bio: editProfileForm.bio, avatar: editProfileForm.avatar || u.avatar } : u));
+    setCurrentUser(prev => ({ ...prev, name: editProfileForm.name, bio: editProfileForm.bio, avatar: editProfileForm.avatar || prev.avatar }));
+    setShowEditProfile(false); alert("Profil güncellendi!");
+  };
+
   const handleCreatePost = () => {
     if (!newPost.title || !newPost.media) { alert("Başlık ve medya gerekli!"); return; }
-    const post = { 
-      id: allPins.length + 1, image: newPost.media, title: newPost.title, 
-      description: newPost.description, category: newPost.category, 
-      userId: currentUser.id, userName: currentUser.name, saves: 0, likes: 0, commentCount: 0 
-    };
+    const post = { id: allPins.length + 1, image: newPost.media, title: newPost.title, description: newPost.description, category: newPost.category, userId: currentUser.id, userName: currentUser.name, saves: 0, likes: 0, commentCount: 0 };
     setAllPins([post, ...allPins]); setShowCreatePost(false);
-    setNewPost({ type: "photo", title: "", description: "", category: "Tasarım", media: null });
-    alert("Paylaşıldı!");
+    setNewPost({ type: "photo", title: "", description: "", category: "Tasarım", media: null }); alert("Paylaşıldı!");
   };
 
   const handleFileSelect = (e) => {
@@ -111,6 +168,28 @@ const PinspireApp = () => {
       reader.onloadend = () => setNewPost({ ...newPost, media: reader.result });
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleLogoClick = () => {
+    setActiveTab("home"); setShowProfile(false); setShowUserSearch(false);
+    setShowCreatePost(false); setShowMessages(false); setSelectedPin(null);
+    setSearchQuery(""); setSelectedCategory("all");
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDownloadImage = (imageUrl, title) => {
+    fetch(imageUrl)
+      .then(response => response.blob())
+      .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${title}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      });
   };
 
   const toggleFollow = (userId) => {
@@ -131,7 +210,10 @@ const PinspireApp = () => {
     });
   };
 
-  const toggleSave = (pinId) => setSavedPins(prev => prev.includes(pinId) ? prev.filter(id => id !== pinId) : [...prev, pinId]);
+  const toggleSave = (pinId) => {
+    setSavedPins(prev => prev.includes(pinId) ? prev.filter(id => id !== pinId) : [...prev, pinId]);
+    setAllPins(prev => prev.map(pin => pin.id === pinId ? { ...pin, saves: savedPins.includes(pinId) ? pin.saves - 1 : pin.saves + 1 } : pin));
+  };
 
   const toggleLike = (pinId) => {
     setLikedPins(prev => prev.includes(pinId) ? prev.filter(id => id !== pinId) : [...prev, pinId]);
@@ -162,7 +244,69 @@ const PinspireApp = () => {
     else if (showProfile && viewingUserId === null) result = result.filter(pin => pin.userId === currentUser?.id);
     return result;
   }, [selectedCategory, searchQuery, activeTab, savedPins, allPins, showProfile, viewingUserId, currentUser]);
-  // Login ekranı
+  // Tam ekran görsel
+  if (showFullImage) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        <div className="flex items-center justify-between p-4 bg-black bg-opacity-50">
+          <button onClick={() => setShowFullImage(null)} className="text-white">
+            <X size={28} />
+          </button>
+          <h2 className="text-white font-bold text-lg">{showFullImage.title}</h2>
+          <button onClick={() => handleDownloadImage(showFullImage.image, showFullImage.title)} className="text-white">
+            <Download size={24} />
+          </button>
+        </div>
+        <div className="flex-1 flex items-center justify-center p-4">
+          <img src={showFullImage.image} alt={showFullImage.title} className="max-w-full max-h-full object-contain" />
+        </div>
+        <div className="p-4 bg-black bg-opacity-50 text-white text-center">
+          <p>{showFullImage.description}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Profil düzenleme
+  if (showEditProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 pb-20">
+        <header className="bg-white shadow-sm sticky top-0 z-40">
+          <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <button onClick={() => setShowEditProfile(false)} className="text-2xl">←</button>
+            <h2 className="font-bold text-lg">Profili Düzenle</h2>
+            <button onClick={handleSaveProfile} className="text-purple-600 font-semibold">Kaydet</button>
+          </div>
+        </header>
+        <div className="max-w-4xl mx-auto p-4">
+          <div className="bg-white rounded-3xl p-6">
+            <div className="flex flex-col items-center mb-6">
+              <div className="relative">
+                <img src={editProfileForm.avatar || currentUser.avatar} alt="" className="w-32 h-32 rounded-full mb-3 object-cover" />
+                <label className="absolute bottom-3 right-0 bg-purple-500 text-white p-2 rounded-full cursor-pointer">
+                  <Camera size={20} />
+                  <input type="file" accept="image/*" onChange={handleEditProfileImageSelect} className="hidden" />
+                </label>
+              </div>
+              <p className="text-sm text-gray-600">Profil fotoğrafını değiştir</p>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold mb-2">Ad Soyad</label>
+                <input type="text" value={editProfileForm.name} onChange={(e) => setEditProfileForm({ ...editProfileForm, name: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none" placeholder="Ad Soyad" />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold mb-2">Bio</label>
+                <textarea value={editProfileForm.bio} onChange={(e) => setEditProfileForm({ ...editProfileForm, bio: e.target.value })} className="w-full px-4 py-3 rounded-xl border-2 focus:border-purple-500 outline-none" placeholder="Hakkında" rows={4} />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Login/Register
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-purple-100 to-blue-100 flex items-center justify-center p-4">
@@ -193,6 +337,22 @@ const PinspireApp = () => {
             </div>
           ) : (
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+              <div className="flex flex-col items-center mb-4">
+                <div className="relative">
+                  {registerForm.avatar ? (
+                    <img src={registerForm.avatar} alt="Avatar" className="w-24 h-24 rounded-full object-cover" />
+                  ) : (
+                    <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center">
+                      <User size={40} className="text-gray-400" />
+                    </div>
+                  )}
+                  <label className="absolute bottom-0 right-0 bg-purple-500 text-white p-2 rounded-full cursor-pointer">
+                    <Camera size={16} />
+                    <input type="file" accept="image/*" onChange={handleProfileImageSelect} className="hidden" />
+                  </label>
+                </div>
+                <p className="text-sm text-gray-600 mt-2">Profil fotoğrafı seç</p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <input type="text" value={registerForm.firstName} onChange={(e) => setRegisterForm({ ...registerForm, firstName: e.target.value })} className="px-4 py-2 rounded-xl border-2 focus:border-purple-500 outline-none text-sm" placeholder="Ad" />
                 <input type="text" value={registerForm.lastName} onChange={(e) => setRegisterForm({ ...registerForm, lastName: e.target.value })} className="px-4 py-2 rounded-xl border-2 focus:border-purple-500 outline-none text-sm" placeholder="Soyad" />
@@ -205,6 +365,16 @@ const PinspireApp = () => {
               </div>
               <input type="date" value={registerForm.birthDate} onChange={(e) => setRegisterForm({ ...registerForm, birthDate: e.target.value })} className="w-full px-4 py-2 rounded-xl border-2 focus:border-purple-500 outline-none text-sm" />
               <input type="password" value={registerForm.password} onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })} className="w-full px-4 py-2 rounded-xl border-2 focus:border-purple-500 outline-none text-sm" placeholder="Şifre" />
+              <div>
+                <label className="block text-sm font-semibold mb-2">İlgi Alanlarını Seç</label>
+                <div className="flex flex-wrap gap-2">
+                  {interestOptions.map(interest => (
+                    <button key={interest} onClick={() => toggleInterest(interest)} className={`px-3 py-1 rounded-full text-sm font-semibold ${registerForm.interests.includes(interest) ? "bg-purple-500 text-white" : "bg-gray-200"}`}>
+                      {interest}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <button onClick={handleRegister} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-3 rounded-xl font-semibold">Kayıt Ol</button>
               <p className="text-center text-sm">Hesabın var mı? <button onClick={() => setAuthMode("login")} className="text-purple-600 font-semibold">Giriş Yap</button></p>
             </div>
@@ -214,7 +384,7 @@ const PinspireApp = () => {
     );
   }
 
-  // Yeni gönderi ekranı
+  // Gönderi oluşturma
   if (showCreatePost) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
@@ -269,7 +439,7 @@ const PinspireApp = () => {
     );
   }
 
-  // Mesajlar ekranı
+  // Mesajlar
   if (showMessages) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
@@ -296,7 +466,7 @@ const PinspireApp = () => {
     );
   }
 
-  // Kullanıcı arama ekranı
+  // Kullanıcı arama
   if (showUserSearch) {
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
@@ -316,7 +486,7 @@ const PinspireApp = () => {
             const isFollowing = currentUser.followingList?.includes(user.id);
             return (
               <div key={user.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 mb-3">
-                <img src={user.avatar} alt="" className="w-16 h-16 rounded-full cursor-pointer" onClick={() => openUserProfile(user.id)} />
+                <img src={user.avatar} alt="" className="w-16 h-16 rounded-full cursor-pointer object-cover" onClick={() => openUserProfile(user.id)} />
                 <div className="flex-1 cursor-pointer" onClick={() => openUserProfile(user.id)}>
                   <h3 className="font-bold">{user.name}</h3>
                   <p className="text-sm text-gray-600">{user.bio}</p>
@@ -341,7 +511,7 @@ const PinspireApp = () => {
     );
   }
 
-  // Profil ekranı
+  // Profil
   if (showProfile) {
     const profileUser = viewingUserId !== null ? users.find(u => u.id === viewingUserId) : currentUser;
     const isOwnProfile = profileUser?.id === currentUser.id;
@@ -363,16 +533,22 @@ const PinspireApp = () => {
         <div className="max-w-4xl mx-auto p-4">
           <div className="bg-white rounded-3xl p-6 mb-4">
             <div className="flex items-start gap-4 mb-4">
-              <img src={profileUser?.avatar} alt="" className="w-24 h-24 rounded-full" />
+              <img src={profileUser?.avatar} alt="" className="w-24 h-24 rounded-full object-cover" />
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-1">{profileUser?.name}</h2>
                 <p className="text-gray-600 mb-2">@{profileUser?.username}</p>
                 <p className="text-sm mb-3">{profileUser?.bio}</p>
-                {!isOwnProfile && profileUser?.id !== 0 && (
-                  <button onClick={() => toggleFollow(profileUser.id)} className={`px-6 py-2 rounded-full font-semibold ${isFollowing ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
-                    {isFollowing ? "Takipte" : "Takip Et"}
-                  </button>
-                )}
+                <div className="flex gap-2">
+                  {isOwnProfile ? (
+                    <button onClick={() => { setEditProfileForm({ name: currentUser.name, bio: currentUser.bio, avatar: "" }); setShowEditProfile(true); }} className="px-6 py-2 bg-purple-500 text-white rounded-full font-semibold flex items-center gap-2">
+                      <Edit size={16} /> Düzenle
+                    </button>
+                  ) : profileUser?.id !== 0 && (
+                    <button onClick={() => toggleFollow(profileUser.id)} className={`px-6 py-2 rounded-full font-semibold ${isFollowing ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
+                      {isFollowing ? "Takipte" : "Takip Et"}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-6 text-center border-t pt-4">
@@ -392,7 +568,7 @@ const PinspireApp = () => {
           </div>
           <div className="grid grid-cols-2 gap-4">
             {filteredPins.map(pin => (
-              <div key={pin.id} onClick={() => setSelectedPin(pin)} className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition">
+              <div key={pin.id} onClick={() => setShowFullImage(pin)} className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:shadow-lg transition">
                 <img src={pin.image} alt={pin.title} className="w-full h-48 object-cover" />
                 <div className="p-3">
                   <h3 className="font-bold mb-1">{pin.title}</h3>
@@ -413,7 +589,7 @@ const PinspireApp = () => {
     );
   }
 
-  // Pin detay ekranı
+  // Pin detay
   if (selectedPin) {
     const pinComments = comments[selectedPin.id] || [];
     return (
@@ -422,14 +598,16 @@ const PinspireApp = () => {
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <button onClick={() => setSelectedPin(null)} className="text-2xl">←</button>
             <h2 className="font-bold text-lg">Detay</h2>
-            <div className="w-6"></div>
+            <button onClick={() => handleDownloadImage(selectedPin.image, selectedPin.title)} className="text-purple-600">
+              <Download size={20} />
+            </button>
           </div>
         </header>
         <div className="max-w-4xl mx-auto">
-          <img src={selectedPin.image} alt={selectedPin.title} className="w-full max-h-96 object-cover" />
+          <img src={selectedPin.image} alt={selectedPin.title} className="w-full max-h-96 object-cover cursor-pointer" onClick={() => setShowFullImage(selectedPin)} />
           <div className="bg-white p-4">
             <div className="flex items-center gap-3 mb-4">
-              <img src={users.find(u => u.id === selectedPin.userId)?.avatar} alt="" className="w-12 h-12 rounded-full cursor-pointer" onClick={() => openUserProfile(selectedPin.userId)} />
+              <img src={users.find(u => u.id === selectedPin.userId)?.avatar} alt="" className="w-12 h-12 rounded-full cursor-pointer object-cover" onClick={() => openUserProfile(selectedPin.userId)} />
               <div className="flex-1 cursor-pointer" onClick={() => openUserProfile(selectedPin.userId)}>
                 <h3 className="font-bold">{selectedPin.userName}</h3>
                 <p className="text-xs text-gray-600">{selectedPin.category}</p>
@@ -461,7 +639,7 @@ const PinspireApp = () => {
               <div className="space-y-3 mb-4">
                 {pinComments.map(comment => (
                   <div key={comment.id} className="flex gap-3">
-                    <img src={comment.avatar} alt="" className="w-8 h-8 rounded-full" />
+                    <img src={comment.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />
                     <div className="flex-1 bg-gray-100 rounded-2xl p-3">
                       <p className="font-semibold text-sm">{comment.userName}</p>
                       <p className="text-sm">{comment.text}</p>
@@ -470,6 +648,7 @@ const PinspireApp = () => {
                 ))}
               </div>
               <div className="flex gap-2">
+                <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1​​​​​​​​​​​​​​​​
                 <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1 px-4 py-2 border-2 rounded-full outline-none focus:border-purple-500" />
                 <button onClick={() => handleAddComment(selectedPin.id)} className="bg-purple-500 text-white p-2 rounded-full"><Send size={20} /></button>
               </div>
@@ -493,7 +672,7 @@ const PinspireApp = () => {
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <img src={LOGO_URL} alt="Logo" className="w-10 h-10 rounded-xl cursor-pointer" onClick={() => { setActiveTab("home"); setSearchQuery(""); setSelectedCategory("all"); }} />
+            <img src={LOGO_URL} alt="Logo" className="w-10 h-10 rounded-xl cursor-pointer" onClick={handleLogoClick} />
             <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">Pinspire</h1>
             <button onClick={() => { setShowProfile(true); setViewingUserId(null); }}><User size={24} /></button>
           </div>
