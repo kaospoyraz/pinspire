@@ -510,7 +510,6 @@ const PinspireApp = () => {
       </div>
     );
   }
-
   // Profil
   if (showProfile) {
     const profileUser = viewingUserId !== null ? users.find(u => u.id === viewingUserId) : currentUser;
@@ -648,7 +647,6 @@ const PinspireApp = () => {
                 ))}
               </div>
               <div className="flex gap-2">
-                <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1​​​​​​​​​​​​​​​​
                 <input type="text" value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Yorum yaz..." className="flex-1 px-4 py-2 border-2 rounded-full outline-none focus:border-purple-500" />
                 <button onClick={() => handleAddComment(selectedPin.id)} className="bg-purple-500 text-white p-2 rounded-full"><Send size={20} /></button>
               </div>
