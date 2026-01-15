@@ -1017,3 +1017,26 @@ const PinspireApp = () => {
               <img src={pin.image} alt={pin.title} className="w-full h-48 object-cover" />
               <div className="p-3">
                 <h3 className="font-bold mb-1">{pin.title}</h3>
+                <h3 className="font-bold mb-1">{pin.title}</h3>
+                <p className="text-xs text-gray-600 mb-2">{pin.description}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <span className="flex items-center gap-1"><Heart size={14} />{pin.likes}</span>
+                  <span className="flex items-center gap-1"><Bookmark size={14} />{pin.saves}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-40">
+        <button onClick={() => setActiveTab("home")} className={activeTab === "home" ? "text-purple-600" : "text-gray-400"}><Home size={24} /></button>
+        <button onClick={() => setShowUserSearch(true)} className="text-gray-400"><Search size={24} /></button>
+        <button onClick={() => setShowCreatePost(true)} className="text-gray-400"><Plus size={24} /></button>
+        <button onClick={() => setActiveTab("saved")} className={activeTab === "saved" ? "text-purple-600" : "text-gray-400"}><Bookmark size={24} /></button>
+        <button onClick={() => setShowMessages(true)} className="text-gray-400"><MessageCircle size={24} /></button>
+      </nav>
+    </div>
+  );
+};
+
+export default PinspireApp;
