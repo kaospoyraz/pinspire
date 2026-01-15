@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { 
   Search, Heart, User, Home, Plus, Bookmark, X, LogOut, Send, 
   MessageCircle, UserPlus, UserCheck, Image as ImageIcon, Video, Type, Mail,
-  Download, Edit, Camera, RefreshCw
+  Download, Edit, Camera, RefreshCw, Smile, Trash2, Check, CheckCheck,
+  Users, Share2
 } from "lucide-react";
 
 const PinspireApp = () => {
@@ -37,6 +38,20 @@ const PinspireApp = () => {
   const [comments, setComments] = useState({});
   const [savedPins, setSavedPins] = useState([]);
   const [likedPins, setLikedPins] = useState([]);
+
+  // Mesajlaşma state'leri
+  const [conversations, setConversations] = useState([]);
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [showGroupChatModal, setShowGroupChatModal] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [groupName, setGroupName] = useState("");
+  const [messageImagePreview, setMessageImagePreview] = useState(null);
+  const [onlineUsers, setOnlineUsers] = useState([1, 2]); // Simüle online kullanıcılar
+
+  const emojis = ["😀", "😂", "❤️", "👍", "🎉", "🔥", "✨", "💯", "🙌", "👏", "😍", "🥰", "😎", "🤔", "😢", "😭", "🙏", "💪", "🎨", "📌"];
 
   const interestOptions = ["Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor", "Müzik"];
 
@@ -86,6 +101,15 @@ const PinspireApp = () => {
   ]);
 
   const categories = ["Tümü", "Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor"];
+
+  // Online kullanıcıları simüle et
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const randomUsers = users.filter(u => u.id !== currentUser?.id).map(u => u.id).sort(() => 0.5 - Math.random()).slice(0, Math.floor(Math.random() * 3) + 1);
+      setOnlineUsers(randomUsers);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [users, currentUser]);
 
   const handleLogin = () => {
     const user = users.find(u => u.email === loginForm.email && u.password === loginForm.password);
@@ -229,6 +253,119 @@ const PinspireApp = () => {
   };
 
   const openUserProfile = (userId) => { setViewingUserId(userId); setShowProfile(true); setShowUserSearch(false); };
+
+  // Mesajlaşma fonksiyonları
+  const handleStartChat = (userId) => {
+    const existingConv = conversations.find(c => !c.isGroup && c.participants.includes(userId) && c.participants.includes(currentUser.id));
+    if (existingConv) {
+      setActiveConversation(existingConv.id);
+    } else {
+      const newConv = {
+        id: Date.now(),
+        participants: [currentUser.id, userId],
+        isGroup: false,
+        name: users.find(u => u.id === userId)?.name,
+        avatar: users.find(u => u.id === userId)?.avatar,
+        messages: [],
+        lastMessage: null
+      };
+      setConversations([...conversations, newConv]);
+      setActiveConversation(newConv.id);
+    }
+    setShowNewChatModal(false);
+  };
+
+  const handleCreateGroupChat = () => {
+    if (selectedUsers.length < 2) { alert("En az 2 kişi seç!"); return; }
+    if (!groupName.trim()) { alert("Grup adı gir!"); return; }
+    const newConv = {
+      id: Date.now(),
+      participants: [currentUser.id, ...selectedUsers],
+      isGroup: true,
+      name: groupName,
+      avatar: "https://ui-avatars.com/api/?name=" + groupName,
+      messages: [],
+      lastMessage: null
+    };
+    setConversations([...conversations, newConv]);
+    setShowGroupChatModal(false);
+    setSelectedUsers([]);
+    setGroupName("");
+    setActiveConversation(newConv.id);
+  };
+
+  const handleSendMessage = () => {
+    if (!newMessage.trim() && !messageImagePreview) return;
+    const conv = conversations.find(c => c.id === activeConversation);
+    if (!conv) return;
+
+    const message = {
+      id: Date.now(),
+      senderId: currentUser.id,
+      text: newMessage,
+      image: messageImagePreview,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    const updatedConv = {
+      ...conv,
+      messages: [...conv.messages, message],
+      lastMessage: newMessage || "Fotoğraf gönderildi"
+    };
+
+    setConversations(conversations.map(c => c.id === activeConversation ? updatedConv : c));
+    setNewMessage("");
+    setMessageImagePreview(null);
+  };
+
+  const handleDeleteMessage = (messageId) => {
+    const conv = conversations.find(c => c.id === activeConversation);
+    if (!conv) return;
+    const updatedConv = {
+      ...conv,
+      messages: conv.messages.filter(m => m.id !== messageId)
+    };
+    setConversations(conversations.map(c => c.id === activeConversation ? updatedConv : c));
+  };
+
+  const handleSharePin = (pinId) => {
+    const conv = conversations.find(c => c.id === activeConversation);
+    if (!conv) return;
+    const pin = allPins.find(p => p.id === pinId);
+    if (!pin) return;
+
+    const message = {
+      id: Date.now(),
+      senderId: currentUser.id,
+      text: "",
+      pin: pin,
+      timestamp: new Date().toISOString(),
+      read: false
+    };
+
+    const updatedConv = {
+      ...conv,
+      messages: [...conv.messages, message],
+      lastMessage: "Pin paylaşıldı"
+    };
+
+    setConversations(conversations.map(c => c.id === activeConversation ? updatedConv : c));
+  };
+
+  const handleMessageImageSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => setMessageImagePreview(reader.result);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const formatTime = (timestamp) => {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  };
 
   const filteredUsers = useMemo(() => {
     if (!userSearchQuery) return users.filter(u => u.id !== currentUser?.id);
@@ -438,22 +575,193 @@ const PinspireApp = () => {
       </div>
     );
   }
+  // Mesajlar - Yeni Chat Modal
+  if (showNewChatModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl max-w-md w-full max-h-[80vh] overflow-hidden">
+          <div className="p-4 border-b flex items-center justify-between">
+            <h3 className="font-bold text-lg">Yeni Sohbet</h3>
+            <button onClick={() => setShowNewChatModal(false)}><X size={24} /></button>
+          </div>
+          <div className="p-4 overflow-y-auto max-h-[60vh]">
+            {users.filter(u => u.id !== currentUser.id).map(user => (
+              <div key={user.id} onClick={() => handleStartChat(user.id)} className="flex items-center gap-3 p-3 hover:bg-gray-100 rounded-xl cursor-pointer mb-2">
+                <div className="relative">
+                  <img src={user.avatar} alt="" className="w-12 h-12 rounded-full object-cover" />
+                  {onlineUsers.includes(user.id) && <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>}
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-semibold">{user.name}</h4>
+                  <p className="text-sm text-gray-600">{onlineUsers.includes(user.id) ? "Çevrimiçi" : "Çevrimdışı"}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Grup Chat Modal
+  if (showGroupChatModal) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl max-w-md w-full max-h-[80vh] overflow-hidden">
+          <div className="p-4 border-b flex items-center justify-between">
+            <h3 className="font-bold text-lg">Grup Oluştur</h3>
+            <button onClick={() => { setShowGroupChatModal(false); setSelectedUsers([]); setGroupName(""); }}><X size={24} /></button>
+          </div>
+          <div className="p-4">
+            <input type="text" value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="Grup adı" className="w-full px-4 py-3 rounded-xl border-2 mb-4 outline-none focus:border-purple-500" />
+            <p className="text-sm font-semibold mb-2">Katılımcılar ({selectedUsers.length})</p>
+            <div className="overflow-y-auto max-h-[40vh]">
+              {users.filter(u => u.id !== currentUser.id).map(user => (
+                <div key={user.id} onClick={() => setSelectedUsers(prev => prev.includes(user.id) ? prev.filter(id => id !== user.id) : [...prev, user.id])} className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer mb-2 ${selectedUsers.includes(user.id) ? "bg-purple-100" : "hover:bg-gray-100"}`}>
+                  <img src={user.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+                  <p className="flex-1 font-semibold">{user.name}</p>
+                  {selectedUsers.includes(user.id) && <Check size={20} className="text-purple-600" />}
+                </div>
+              ))}
+            </div>
+            <button onClick={handleCreateGroupChat} className="w-full bg-purple-500 text-white py-3 rounded-xl font-semibold mt-4">Oluştur</button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Mesajlar
   if (showMessages) {
+    if (activeConversation) {
+      const conv = conversations.find(c => c.id === activeConversation);
+      if (!conv) return null;
+
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
+          <header className="bg-white shadow-sm sticky top-0 z-40">
+            <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-3">
+              <button onClick={() => setActiveConversation(null)} className="text-2xl">←</button>
+              <img src={conv.avatar} alt="" className="w-10 h-10 rounded-full object-cover" />
+              <div className="flex-1">
+                <h3 className="font-bold">{conv.name}</h3>
+                {!conv.isGroup && <p className="text-xs text-gray-600">{onlineUsers.includes(conv.participants.find(id => id !== currentUser.id)) ? "Çevrimiçi" : "Çevrimdışı"}</p>}
+              </div>
+            </div>
+          </header>
+          <div className="flex-1 overflow-y-auto p-4 pb-24">
+            {conv.messages.map(msg => {
+              const isOwn = msg.senderId === currentUser.id;
+              const sender = users.find(u => u.id === msg.senderId);
+              return (
+                <div key={msg.id} className={`flex gap-2 mb-4 ${isOwn ? "flex-row-reverse" : ""}`}>
+                  {!isOwn && <img src={sender?.avatar} alt="" className="w-8 h-8 rounded-full object-cover" />}
+                  <div className={`max-w-[70%] ${isOwn ? "bg-purple-500 text-white" : "bg-white"} rounded-2xl p-3 relative group`}>
+                    {conv.isGroup && !isOwn && <p className="text-xs font-semibold mb-1">{sender?.name}</p>}
+                    {msg.image && <img src={msg.image} alt="" className="rounded-xl mb-2 max-w-full" />}
+                    {msg.pin && (
+                      <div className="bg-gray-100 rounded-xl p-2 mb-2">
+                        <img src={msg.pin.image} alt="" className="w-full h-32 object-cover rounded-lg mb-2" />
+                        <p className="text-sm font-semibold text-gray-800">{msg.pin.title}</p>
+                      </div>
+                    )}
+                    {msg.text && <p className="break-words">{msg.text}</p>}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className={`text-xs ${isOwn ? "text-purple-200" : "text-gray-500"}`}>{formatTime(msg.timestamp)}</span>
+                      {isOwn && <span className="text-xs">{msg.read ? <CheckCheck size={14} /> : <Check size={14} />}</span>}
+                    </div>
+                    {isOwn && (
+                      <button onClick={() => handleDeleteMessage(msg.id)} className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition">
+                        <Trash2 size={16} className="text-red-500" />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+            <div className="max-w-4xl mx-auto">
+              {messageImagePreview && (
+                <div className="mb-2 relative inline-block">
+                  <img src={messageImagePreview} alt="" className="h-20 rounded-lg" />
+                  <button onClick={() => setMessageImagePreview(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1">
+                    <X size={16} />
+                  </button>
+                </div>
+              )}
+              {showEmojiPicker && (
+                <div className="mb-2 flex flex-wrap gap-2 p-2 bg-gray-100 rounded-xl">
+                  {emojis.map(emoji => (
+                    <button key={emoji} onClick={() => { setNewMessage(newMessage + emoji); setShowEmojiPicker(false); }} className="text-2xl hover:scale-125 transition">
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2 items-center">
+                <button onClick={() => setShowEmojiPicker(!showEmojiPicker)} className="text-gray-600">
+                  <Smile size={24} />
+                </button>
+                <label className="text-gray-600 cursor-pointer">
+                  <ImageIcon size={24} />
+                  <input type="file" accept="image/*" onChange={handleMessageImageSelect} className="hidden" />
+                </label>
+                <button onClick={() => { const pins = allPins.slice(0, 5); const pin = pins[Math.floor(Math.random() * pins.length)]; handleSharePin(pin.id); }} className="text-gray-600">
+                  <Share2 size={24} />
+                </button>
+                <input type="text" value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyPress={(e) => e.key === "Enter" && handleSendMessage()} placeholder="Mesaj yaz..." className="flex-1 px-4 py-2 border-2 rounded-full outline-none focus:border-purple-500" />
+                <button onClick={handleSendMessage} className="bg-purple-500 text-white p-2 rounded-full">
+                  <Send size={20} />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 pb-20">
         <header className="bg-white shadow-sm sticky top-0 z-40">
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
             <button onClick={() => setShowMessages(false)} className="text-2xl">←</button>
             <h2 className="font-bold text-lg">Mesajlar</h2>
-            <div className="w-6"></div>
+            <div className="flex gap-2">
+              <button onClick={() => setShowGroupChatModal(true)} className="text-purple-600"><Users size={24} /></button>
+              <button onClick={() => setShowNewChatModal(true)} className="text-purple-600"><Plus size={24} /></button>
+            </div>
           </div>
         </header>
-        <div className="max-w-4xl mx-auto p-4 text-center py-20">
-          <MessageCircle size={64} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-xl font-bold mb-2">Henüz mesaj yok</h3>
-          <p className="text-gray-600">Yakında</p>
+        <div className="max-w-4xl mx-auto p-4">
+          {conversations.length === 0 ? (
+            <div className="text-center py-20">
+              <MessageCircle size={64} className="mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Henüz mesaj yok</h3>
+              <p className="text-gray-600 mb-4">Sohbet başlatmak için + butonuna bas</p>
+            </div>
+          ) : (
+            conversations.map(conv => (
+              <div key={conv.id} onClick={() => setActiveConversation(conv.id)} className="bg-white rounded-2xl p-4 flex items-center gap-4 mb-3 cursor-pointer hover:shadow-lg transition">
+                <div className="relative">
+                  <img src={conv.avatar} alt="" className="w-14 h-14 rounded-full object-cover" />
+                  {!conv.isGroup && onlineUsers.includes(conv.participants.find(id => id !== currentUser.id)) && (
+                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-bold">{conv.name}</h3>
+                    {conv.isGroup && <Users size={16} className="text-gray-500" />}
+                  </div>
+                  <p className="text-sm text-gray-600 truncate">{conv.lastMessage || "Henüz mesaj yok"}</p>
+                </div>
+                {conv.messages.length > 0 && (
+                  <span className="text-xs text-gray-500">{formatTime(conv.messages[conv.messages.length - 1].timestamp)}</span>
+                )}
+              </div>
+            ))
+          )}
         </div>
         <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-40">
           <button onClick={() => { setShowMessages(false); setActiveTab("home"); }} className="text-gray-400"><Home size={24} /></button>
@@ -486,16 +794,22 @@ const PinspireApp = () => {
             const isFollowing = currentUser.followingList?.includes(user.id);
             return (
               <div key={user.id} className="bg-white rounded-2xl p-4 flex items-center gap-4 mb-3">
-                <img src={user.avatar} alt="" className="w-16 h-16 rounded-full cursor-pointer object-cover" onClick={() => openUserProfile(user.id)} />
+                <div className="relative">
+                  <img src={user.avatar} alt="" className="w-16 h-16 rounded-full cursor-pointer object-cover" onClick={() => openUserProfile(user.id)} />
+                  {onlineUsers.includes(user.id) && <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>}
+                </div>
                 <div className="flex-1 cursor-pointer" onClick={() => openUserProfile(user.id)}>
                   <h3 className="font-bold">{user.name}</h3>
                   <p className="text-sm text-gray-600">{user.bio}</p>
                 </div>
-                {user.id !== 0 && (
+                <div className="flex gap-2">
+                  <button onClick={() => handleStartChat(user.id)} className="p-2 bg-gray-100 rounded-full">
+                    <MessageCircle size={20} />
+                  </button>
                   <button onClick={() => toggleFollow(user.id)} className={`px-5 py-2 rounded-full font-semibold text-sm ${isFollowing ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
                     {isFollowing ? "Takipte" : "Takip"}
                   </button>
-                )}
+                </div>
               </div>
             );
           })}
@@ -510,6 +824,7 @@ const PinspireApp = () => {
       </div>
     );
   }
+
   // Profil
   if (showProfile) {
     const profileUser = viewingUserId !== null ? users.find(u => u.id === viewingUserId) : currentUser;
@@ -532,7 +847,10 @@ const PinspireApp = () => {
         <div className="max-w-4xl mx-auto p-4">
           <div className="bg-white rounded-3xl p-6 mb-4">
             <div className="flex items-start gap-4 mb-4">
-              <img src={profileUser?.avatar} alt="" className="w-24 h-24 rounded-full object-cover" />
+              <div className="relative">
+                <img src={profileUser?.avatar} alt="" className="w-24 h-24 rounded-full object-cover" />
+                {onlineUsers.includes(profileUser?.id) && <div className="absolute bottom-0 right-0 w-5 h-5 bg-green-500 rounded-full border-2 border-white"></div>}
+              </div>
               <div className="flex-1">
                 <h2 className="text-2xl font-bold mb-1">{profileUser?.name}</h2>
                 <p className="text-gray-600 mb-2">@{profileUser?.username}</p>
@@ -542,10 +860,15 @@ const PinspireApp = () => {
                     <button onClick={() => { setEditProfileForm({ name: currentUser.name, bio: currentUser.bio, avatar: "" }); setShowEditProfile(true); }} className="px-6 py-2 bg-purple-500 text-white rounded-full font-semibold flex items-center gap-2">
                       <Edit size={16} /> Düzenle
                     </button>
-                  ) : profileUser?.id !== 0 && (
-                    <button onClick={() => toggleFollow(profileUser.id)} className={`px-6 py-2 rounded-full font-semibold ${isFollowing ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
-                      {isFollowing ? "Takipte" : "Takip Et"}
-                    </button>
+                  ) : (
+                    <>
+                      <button onClick={() => handleStartChat(profileUser.id)} className="px-6 py-2 bg-gray-200 rounded-full font-semibold flex items-center gap-2">
+                        <MessageCircle size={16} /> Mesaj
+                      </button>
+                      <button onClick={() => toggleFollow(profileUser.id)} className={`px-6 py-2 rounded-full font-semibold ${isFollowing ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
+                        {isFollowing ? "Takipte" : "Takip Et"}
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -611,7 +934,7 @@ const PinspireApp = () => {
                 <h3 className="font-bold">{selectedPin.userName}</h3>
                 <p className="text-xs text-gray-600">{selectedPin.category}</p>
               </div>
-              {selectedPin.userId !== currentUser.id && selectedPin.userId !== 0 && (
+              {selectedPin.userId !== currentUser.id && (
                 <button onClick={() => toggleFollow(selectedPin.userId)} className={`px-4 py-1 rounded-full text-sm font-semibold ${currentUser.followingList?.includes(selectedPin.userId) ? "bg-gray-200" : "bg-purple-500 text-white"}`}>
                   {currentUser.followingList?.includes(selectedPin.userId) ? "Takipte" : "Takip"}
                 </button>
@@ -694,25 +1017,3 @@ const PinspireApp = () => {
               <img src={pin.image} alt={pin.title} className="w-full h-48 object-cover" />
               <div className="p-3">
                 <h3 className="font-bold mb-1">{pin.title}</h3>
-                <p className="text-xs text-gray-600 mb-2">{pin.description}</p>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span className="flex items-center gap-1"><Heart size={14} />{pin.likes}</span>
-                  <span className="flex items-center gap-1"><Bookmark size={14} />{pin.saves}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around py-3 z-40">
-        <button onClick={() => setActiveTab("home")} className={activeTab === "home" ? "text-purple-600" : "text-gray-400"}><Home size={24} /></button>
-        <button onClick={() => setShowUserSearch(true)} className="text-gray-400"><Search size={24} /></button>
-        <button onClick={() => setShowCreatePost(true)} className="text-gray-400"><Plus size={24} /></button>
-        <button onClick={() => setActiveTab("saved")} className={activeTab === "saved" ? "text-purple-600" : "text-gray-400"}><Bookmark size={24} /></button>
-        <button onClick={() => setShowMessages(true)} className="text-gray-400"><MessageCircle size={24} /></button>
-      </nav>
-    </div>
-  );
-};
-
-export default PinspireApp;
