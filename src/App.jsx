@@ -1357,13 +1357,23 @@ const PinspireApp = () => {
                 <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Gönderi</div>
               </div>
               <div>
-                <div className={`font-bold text-xl ${textColor}`}>{profileUser?.followers}</div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Takipçi</div>
-              </div>
-              <div>
-                <div className={`font-bold text-xl ${textColor}`}>{profileUser?.following}</div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-
-              <div>
+<div>
+  <div className={`font-bold text-xl ${textColor}`}>
+    {profileUser?.followers}
+  </div>
+  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+    Takipçi
+  </div>
+</div>
+
+<div>
+  <div className={`font-bold text-xl ${textColor}`}>
+    {profileUser?.following}
+  </div>
+  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+    Takip Edilen
+  </div>
+</div>
                 <div className={`font-bold text-xl ${textColor}`}>
   {profileUser?.following}
 </div>
