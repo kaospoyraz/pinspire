@@ -59,6 +59,7 @@ const PinspireApp = () => {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
   const emojis = ["😀", "😂", "❤️", "👍", "🎉", "🔥", "✨", "💯", "🙌", "👏", "😍", "🥰", "😎", "🤔", "😢", "😭", "🙏", "💪", "🎨", "📌"];
   const interestOptions = ["Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor", "Müzik"];
@@ -77,19 +78,101 @@ const PinspireApp = () => {
     { id: 3, name: "Mehmet Demir", username: "mehmetdemir", email: "mehmet@mail.com", password: "123456", avatar: "https://i.pravatar.cc/150?img=33", bio: "Mimar", city: "İzmir", country: "Türkiye", followers: 3456, following: 234, followingList: [1, 2] },
   ]);
 
-  const [allPins, setAllPins] = useState([
+  const INITIAL_PINS = [
     { id: 101, image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800", title: "Yapay Zeka", description: "AI teknolojisi", category: "Teknoloji", userId: 0, userName: "Pinspire Bot", saves: 2341, likes: 1876, commentCount: 234 },
     { id: 102, image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=800", title: "Doğa", description: "Manzaralar", category: "Doğa", userId: 0, userName: "Pinspire Bot", saves: 3421, likes: 2987, commentCount: 456 },
     { id: 103, image: "https://images.unsplash.com/photo-1495567720989-cebdbdd97913?w=800", title: "Aşk", description: "Sevgi", category: "Duygu", userId: 0, userName: "Pinspire Bot", saves: 4532, likes: 3654, commentCount: 567 },
     { id: 1, image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800", title: "Modern Ofis", description: "Minimal", category: "Tasarım", userId: 1, userName: "Ahmet Yılmaz", saves: 234, likes: 145, commentCount: 12 },
     { id: 2, image: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800", title: "Mimari", description: "Yapılar", category: "Mimari", userId: 3, userName: "Mehmet Demir", saves: 456, likes: 289, commentCount: 34 },
     { id: 3, image: "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800", title: "Moda", description: "Trend", category: "Moda", userId: 2, userName: "Zeynep Kaya", saves: 678, likes: 534, commentCount: 45 },
-  ]);
+  ];
+
+  const [allPins, setAllPins] = useState(INITIAL_PINS);
 
   const categories = ["Tümü", "Tasarım", "Mimari", "Sanat", "Moda", "Yemek", "Doğa", "Teknoloji", "Duygu", "Spor"];
-
+  // Veri yükleme
   useEffect(() => {
-    if (!currentUser) return;
+    const loadData = async () => {
+      try {
+        // Kullanıcıları yükle
+        const usersResult = await window.storage.get('pinspire-users', true);
+        if (usersResult && usersResult.value) {
+          const loadedUsers = JSON.parse(usersResult.value);
+          // Bot her zaman ilk sırada olsun
+          const usersWithBot = [PINSPIRE_BOT, ...loadedUsers.filter(u => u.id !== 0)];
+          setUsers(usersWithBot);
+        }
+
+        // Pinleri yükle
+        const pinsResult = await window.storage.get('pinspire-pins', true);
+        if (pinsResult && pinsResult.value) {
+          setAllPins(JSON.parse(pinsResult.value));
+        }
+
+        // Mevcut kullanıcıyı yükle
+        const currentUserResult = await window.storage.get('pinspire-current-user', false);
+        if (currentUserResult && currentUserResult.value) {
+          const savedUser = JSON.parse(currentUserResult.value);
+          setCurrentUser(savedUser);
+        }
+
+        setIsDataLoaded(true);
+      } catch (error) {
+        console.log('İlk kullanım veya veri yok:', error);
+        setIsDataLoaded(true);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Kullanıcıları kaydet
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const saveUsers = async () => {
+      try {
+        // Bot hariç kullanıcıları kaydet
+        const usersToSave = users.filter(u => u.id !== 0);
+        await window.storage.set('pinspire-users', JSON.stringify(usersToSave), true);
+      } catch (error) {
+        console.error('Kullanıcılar kaydedilemedi:', error);
+      }
+    };
+    saveUsers();
+  }, [users, isDataLoaded]);
+
+  // Pinleri kaydet
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const savePins = async () => {
+      try {
+        await window.storage.set('pinspire-pins', JSON.stringify(allPins), true);
+      } catch (error) {
+        console.error('Pinler kaydedilemedi:', error);
+      }
+    };
+    savePins();
+  }, [allPins, isDataLoaded]);
+
+  // Mevcut kullanıcıyı kaydet
+  useEffect(() => {
+    if (!isDataLoaded) return;
+    const saveCurrentUser = async () => {
+      try {
+        if (currentUser) {
+          await window.storage.set('pinspire-current-user', JSON.stringify(currentUser), false);
+        } else {
+          await window.storage.delete('pinspire-current-user', false);
+        }
+      } catch (error) {
+        console.error('Kullanıcı kaydedilemedi:', error);
+      }
+    };
+    saveCurrentUser();
+  }, [currentUser, isDataLoaded]);
+
+  // Bot paylaşımları - Giriş yapılsın ya da yapılmasın çalışır
+  useEffect(() => {
     const botPosts = [
       { image: "https://images.unsplash.com/photo-1557683316-973673baf926?w=800", title: "Gradient Magic", category: "Tasarım" },
       { image: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?w=800", title: "Abstract Art", category: "Sanat" },
@@ -97,6 +180,7 @@ const PinspireApp = () => {
       { image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800", title: "Trend Fashion", category: "Moda" },
       { image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800", title: "Culinary Art", category: "Yemek" },
     ];
+    
     const interval = setInterval(() => {
       const randomPost = botPosts[Math.floor(Math.random() * botPosts.length)];
       const newPin = {
@@ -113,8 +197,9 @@ const PinspireApp = () => {
       };
       setAllPins(prev => [newPin, ...prev]);
     }, 30000);
+    
     return () => clearInterval(interval);
-  }, [currentUser]);
+  }, []); // currentUser bağımlılığı kaldırıldı
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -133,6 +218,7 @@ const PinspireApp = () => {
     }
     return () => clearInterval(interval);
   }, [showCallScreen]);
+
   const formatCallDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -181,7 +267,7 @@ const PinspireApp = () => {
     if (verificationCode === sentCode) {
       const { firstName, lastName, username, email, city, country, birthDate, password, avatar, interests } = registerForm;
       const newUser = { 
-        id: users.length + 1, 
+        id: Date.now(), 
         name: `${firstName} ${lastName}`, 
         username, 
         email, 
@@ -261,7 +347,7 @@ const PinspireApp = () => {
       return; 
     }
     const post = { 
-      id: allPins.length + 1, 
+      id: Date.now(), 
       image: newPost.media, 
       title: newPost.title, 
       description: newPost.description, 
@@ -286,7 +372,6 @@ const PinspireApp = () => {
       reader.readAsDataURL(file);
     }
   };
-
   const handleLogoClick = () => {
     setActiveTab("home"); 
     setShowProfile(false); 
@@ -1275,6 +1360,9 @@ const PinspireApp = () => {
                 <div className={`font-bold text-xl ${textColor}`}>{profileUser?.followers}</div>
                 <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Takipçi</div>
               </div>
+              <div>
+                <div className={`font-bold text-xl ${textColor}`}>{profileUser?.following}</div>
+                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-
               <div>
                 <div className={`font-bold text-xl ${textColor}`}>{profileUser?.following}</div>
                 <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Takip</div>
