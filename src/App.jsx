@@ -1364,8 +1364,13 @@ const PinspireApp = () => {
                 <div className={`font-bold text-xl ${textColor}`}>{profileUser?.following}</div>
                 <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-
               <div>
-                <div className={`font-bold text-xl ${textColor}`}>{profileUser?.following}</div>
-                <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Takip</div>
+                <div className={`font-bold text-xl ${textColor}`}>
+  {profileUser?.following}
+</div>
+
+<div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+  Following
+</div>
               </div>
             </div>
           </div>
